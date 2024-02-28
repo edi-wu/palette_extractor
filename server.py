@@ -1,4 +1,5 @@
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from ui_tools import present_menu
 
 # Specify port for HTTP server
 PORT = 8000
@@ -30,6 +31,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         # Write data into a jpeg file
         with open("img.jpeg", "wb") as img:
             img.write(data)
+        # Call UI tools function to run image processing module
+        present_menu()
         # Send response
         self.send_response(200)
         self.end_headers()
