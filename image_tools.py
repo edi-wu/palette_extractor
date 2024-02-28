@@ -69,7 +69,7 @@ def adjust_brightness(pixel, option, amount):
     ## To darken, adjust each value by % difference between 0 and the highest of the three values
     # Convert pixel tuple to dict with RGB as keys
     pixel_dict = {'R': pixel[0], 'G': pixel[1], 'B': pixel[2]}
-    if option == 'L':
+    if option.upper() == 'L':
         BOUND = 255
         # Get the lowest value from the three channels
         lowest_value = min(pixel)
@@ -89,7 +89,7 @@ def adjust_brightness(pixel, option, amount):
             else:
                 pixel_dict[key] = round(value + (BOUND - value) * increase_percentage)
 
-    elif option == 'D':
+    elif option.upper() == 'D':
         # Same idea as lighten except adjust toward lower bound of 0
         BOUND = 0
 
