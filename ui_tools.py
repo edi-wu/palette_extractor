@@ -11,7 +11,7 @@ import image_tools
 def present_menu():
     # Constants for current directory, image options, and processing options
     DIRECTORY = os.getcwd()
-    IMAGE_OPTIONS = ['laptop_photo.jpg', 'queen_mary.jpeg']
+    # IMAGE_OPTIONS = ['laptop_photo.jpg', 'queen_mary.jpeg']
     PROCESSING_OPTIONS = ['Lighten/Darken', 'Channel Color', 'Invert Color', 'Add Blur', 'Detect Edges']
 
     # Variable for user choice
@@ -20,15 +20,12 @@ def present_menu():
     # Loop to run program until sentinel is detected
     while user_choice.upper() != 'Q':
         # Prompt user to choose image to alter
-        print("\nChoose an image to alter, or Q to quit: ")
+        print("\nEnter image name, or Q to quit: ")
 
-        # Print choices for image options
-        for i in range(len(IMAGE_OPTIONS)):
-            print(f"{i + 1}) {IMAGE_OPTIONS[i]}")
         user_choice = input()
 
         # Join to get full file path and save to variable
-        file_path = os.path.join(DIRECTORY, IMAGE_OPTIONS[int(user_choice) - 1])
+        file_path = os.path.join(DIRECTORY, user_choice)
 
         # Exit loop if user chose to quit
         if user_choice.upper() == 'Q':
