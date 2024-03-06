@@ -29,7 +29,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         # Read entire binary data
         data = self.rfile.read(content_length)
         # Write data into a jpeg file
-        with open("img.jpeg", "wb") as img:
+        FILE_NAME = "img.jpeg"
+        with open(FILE_NAME, "wb") as img:
             img.write(data)
         # Call UI tools function to run image processing module
         present_menu()
