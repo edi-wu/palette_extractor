@@ -60,7 +60,7 @@ def present_menu():
         # if user_choice.upper() == 'Q':
         #     break
 
-        processing_option = int(user_choice)
+        # processing_option = int(user_choice)
         # Call appropriate processing function based on user choice
         ## Option 1: Lighten or darken
         # if processing_option == 1:
