@@ -61,7 +61,7 @@ def run_k_means(file_path, k):
     # Create, display, and save an image showing the resulting palette
     palette_img = create_palette(k_colors)
     palette_img.show()
-    palette_img.save("palette.png")
+    palette_img.save("./results/palette.png")
 
 
 ## Returns k sets of distinct coordinates given specified bounds
@@ -71,7 +71,7 @@ def run_k_means(file_path, k):
 # @return list of k distinct (x, y) tuples
 #
 def get_k_random_coords(k, max_x, max_y):
-    # Initially, use a set to ensure all random coord tuples are distinct
+    # Initially, use a set to ensure all random coord tuples are distinct # work on making rgb values distinct
     result_set = set()
     # Populate the set until it reaches k size
     while len(result_set) < k:

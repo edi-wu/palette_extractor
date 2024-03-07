@@ -12,7 +12,7 @@ import k_means
 def present_menu():
     # Constants for current directory, image options, and processing options
     DIRECTORY = os.getcwd()
-    FILE_NAME = "img.jpeg"
+    FILE_NAME = "src_images/img.jpeg"
     # IMAGE_OPTIONS = ['laptop_photo.jpg', 'queen_mary.jpeg']
     # PROCESSING_OPTIONS = ['Lighten/Darken', 'Channel Color', 'Invert Color', 'Add Blur', 'Detect Edges']
 

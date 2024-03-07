@@ -29,7 +29,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         # Read entire binary data
         data = self.rfile.read(content_length)
         # Write data into a jpeg file
-        FILE_NAME = "img.jpeg"
+        FILE_NAME = "src_images/img.jpeg"
         with open(FILE_NAME, "wb") as img:
             img.write(data)
         # Call UI tools function to run image processing module
