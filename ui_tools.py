@@ -4,7 +4,7 @@
 
 import os
 # import image_tools
-import k_means
+import k_means_old
 
 
 ## Presents main menu and calls appropriate functions based on user choice

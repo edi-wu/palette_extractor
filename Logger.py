@@ -12,6 +12,7 @@ class Logger:
     ## Enter method for context manager: opens file
     def __enter__(self):
         self.file = open(self.log_file_path, 'a')
+        return self
 
     ## Method for writing a line into the log file
     # @param line - string for a single line
@@ -20,7 +21,7 @@ class Logger:
             self.file.write(line + '\n')
 
     ## Exit method for context manager: closes file
-    def __exit__(self):
+    def __exit__(self, exception_type, exception_object, exception_traceback):
         if self.file is not None:
             self.file.close()
             self.file = None

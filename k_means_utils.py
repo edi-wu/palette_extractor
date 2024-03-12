@@ -1,67 +1,9 @@
 ## Name: Eddie Wu
 ## Date: 3/6/2024
-## Description: Module for k-means clustering algorithm and helpers
+## Description: Module for utility functions used in k-means
 
 from PIL import Image
-import image_tools
 import random
-
-
-## Main function for running k-means algorithm on provided image
-# @param file_path - full path of file received by server (string)
-# @param k - number of clusters for k-means (int)
-#
-def run_k_means(file_path, k):
-    print("Please wait... running k-means clustering.")
-    # Open image, get pixel array, and establish bounds for coordinates
-    with Image.open(file_path) as img:
-        source_pixel_array = img.load()
-
-        # Get the initial k colors (list of pixel tuples) by randomly selecting coordinates
-        ## Coordinates' max value is 1 less than dimension
-        k_random_coords = get_k_random_coords(k, img.width - 1, img.height - 1)
-        k_colors = image_tools.map_coords_to_pixels(k_random_coords, source_pixel_array)
-
-        # Print initial k_colors for debugging
-        print("Initial k_colors (randomly selected): ", k_colors)
-
-        # Convert the PixelAccess object (access using x and y coords) to a plain list of RGB tuples
-        ## For rest of algorithm we need not consider x and y coords of any given pixel
-        all_coords = []
-        for x in range(img.width):
-            for y in range(img.height):
-                all_coords.append((x, y))
-        source_pixel_tuples = image_tools.map_coords_to_pixels(all_coords, source_pixel_array)
-
-        # Boolean for whether the result k_colors changed in last iteration
-        result_changed = True
-
-        # Run algorithm until result no longer changes
-        while result_changed:
-
-            # Make copy of last iteration's palette
-            last_k_colors = k_colors[:]
-
-            # Create empty list of lists for clusters
-            k_clusters = [[] for _ in range(k)]
-
-            # Place all pixels into clusters, each ith cluster corresponds to ith color in k_colors
-            group_pixels(source_pixel_tuples, last_k_colors, k_clusters)
-
-            # Update k_colors by getting new representative color from each cluster,
-            ## where the representative color is the average color by RGB values
-            k_colors = update_k_colors(k_clusters)
-
-            # Compare updated result with past result and update change boolean as needed
-            result_changed = not compare_tuple_lists(k_colors, last_k_colors)
-
-    # Output resulting k_colors
-    print("Representative k_colors: ", k_colors)
-
-    # Create, display, and save an image showing the resulting palette
-    palette_img = create_palette(k_colors)
-    palette_img.show()
-    palette_img.save("./results/palette.png")
 
 
 ## Returns k sets of distinct coordinates given specified bounds
@@ -69,7 +11,6 @@ def run_k_means(file_path, k):
 # @param max_x - max x value for coordinates (int)
 # @param max_y - max y value for coordinates (int)
 # @return list of k distinct (x, y) tuples
-#
 def get_k_random_coords(k, max_x, max_y):
     # Initially, use a set to ensure all random coord tuples are distinct # work on making rgb values distinct
     result_set = set()
@@ -80,6 +21,24 @@ def get_k_random_coords(k, max_x, max_y):
         result_set.add((rand_x, rand_y))
     # Return result set converted to list
     return list(result_set)
+
+
+## Function to map a list of coordinates tuples to pixel tuples
+# @param coords_list - list of (x, y) coordinates (list of tuples)
+# @param pixel_array - array of pixels from an image (list of tuples)
+# @return list of pixel tuples corresponding to coordinates provided
+def map_coords_to_pixels(coords_list, pixel_array):
+    pixels_list = []
+    for x, y in coords_list:
+        pixels_list.append(pixel_array[x, y])
+    return pixels_list
+
+
+## Stringifies a list of RGB tuples for printing or logging
+# @param pixels_list - list of RGB tuples
+# @return stringified list
+def stringify_tuple_list(pixels_list):
+    return '  '.join([str(t) for t in pixels_list])
 
 
 ## Places pixels from source array into appropriate cluster based on k_colors
@@ -128,8 +87,22 @@ def update_k_colors(k_clusters):
     result_k_colors = []
     for i in range(len(k_clusters)):
         curr_cluster = k_clusters[i]
-        result_k_colors.append(image_tools.get_average_pixel(curr_cluster))
+        result_k_colors.append(get_average_pixel(curr_cluster))
     return result_k_colors
+
+
+## Function to return an average pixel (average value in each channel) from a list of pixels
+# @param pixels_list - list of pixels (tuples of three ints)
+# @return tuple of three ints for one pixel
+#
+def get_average_pixel(pixels_list):
+    num_pixels = len(pixels_list)
+    sum_r, sum_g, sum_b = 0, 0, 0
+    for pixel in pixels_list:
+        sum_r += pixel[0]
+        sum_g += pixel[1]
+        sum_b += pixel[2]
+    return round(sum_r / num_pixels), round(sum_g / num_pixels), round(sum_b / num_pixels)
 
 
 ## Compares two lists of tuples for equality (same content in same order)
