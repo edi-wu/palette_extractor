@@ -5,6 +5,7 @@
 
 from PIL import Image
 from Logger import Logger
+from time import perf_counter
 import k_means_utils
 
 
@@ -30,6 +31,9 @@ class K_Means:
     ## Main function to run k-means
     def run(self):
         print('Please wait... running k-means clustering.')
+        # Use perf counter to track start time
+        start_time = perf_counter()
+
         with Image.open(self.file_path) as img, Logger(self.log_file_name) as logger:
             source_pixel_array = img.load()
             logger.log('Project Name: ' + self.project_name + '\n\n')
@@ -42,7 +46,7 @@ class K_Means:
             # Print and log initial k_colors
             print("Initial k_colors (randomly selected): ", self.k_colors)
             logger.log("Initial k_colors (randomly selected): ")
-            logger.log(k_means_utils.stringify_tuple_list(self.k_colors))
+            logger.log(k_means_utils.stringify_tuple_list(self.k_colors) + '\n')
 
             # Convert the PixelAccess object (access using x and y coords) to a plain list of RGB tuples
             ## For rest of algorithm we need not consider x and y coords of any given pixel
@@ -74,8 +78,12 @@ class K_Means:
 
             # Print and log resulting k_colors
             print("Representative k_colors: ", self.k_colors)
-            logger.log("Representative k_colors: ")
-            logger.log(k_means_utils.stringify_tuple_list(self.k_colors))
+            logger.log("\nRepresentative k_colors: ")
+            logger.log(k_means_utils.stringify_tuple_list(self.k_colors) + '\n')
+
+            # Use perf counter for end time and log time elapsed
+            stop_time = perf_counter()
+            logger.log("Time elapsed: " + str(stop_time - start_time) + " seconds.")
 
         # Create, display, and save an image showing the resulting palette
         palette_img = k_means_utils.create_palette(self.k_colors)
