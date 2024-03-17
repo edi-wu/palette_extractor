@@ -1,5 +1,4 @@
 ## Name: Eddie Wu
-## Date: 3/6/2024
 ## Description: Module for utility functions used in k-means
 
 from PIL import Image

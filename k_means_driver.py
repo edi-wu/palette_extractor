@@ -2,8 +2,9 @@
 ## Description: Driver file for running k-means
 
 import cProfile
-from K_Means import K_Means
 import os
+import time
+from K_Means import K_Means
 
 
 def main():
@@ -16,11 +17,11 @@ def main():
     # Prompt user for k values: either single value or ranged
     k_start, k_end, k_interval = -1, -1, 1
     print("Choose an option for k values: ")
-    k_option = input("[S]ingle value\t[R]anged values: ")
-    if k_option.upper() == "S":
+    k_option = input("[S]ingle value\t[R]anged values: ").upper()
+    if k_option == "S":
         k_start = int(input("Enter the value for k: "))
         k_end = k_start
-    elif k_option.upper() == "R":
+    elif k_option == "R":
         k_start = int(input("Enter the lower bound value for k: "))
         k_end = int(input("Enter the upper bound value for k: "))
         k_interval = int(input("Enter the k value increment interval: "))
@@ -30,7 +31,15 @@ def main():
     # Prompt user for number of runs
     num_runs = int(input("Enter the number of runs using the specified k value(s): "))
 
-    k_means_process = K_Means(project_name, k_values, file_path, num_runs)
+    # Create the log file name based on above info
+    log_file_name = f"{project_name}__{str(num_runs)}x_"
+    if k_option == "S":
+        log_file_name += f"({k_start})__"
+    elif k_option == "R":
+        log_file_name += f"({k_start}_{k_end}_{k_interval})__"
+    log_file_name += time.ctime().replace(" ", "_")
+
+    k_means_process = K_Means(project_name, k_values, file_path, num_runs, log_file_name)
     k_means_process.run()
 
 

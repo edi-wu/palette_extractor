@@ -1,5 +1,4 @@
 ## Name: Eddie Wu
-## Date: 3/6/2024
 ## Description: Class to log data into text file
 
 class Logger:
