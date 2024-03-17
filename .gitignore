@@ -1,7 +1,7 @@
 logs
+plots
 results
 src_images
 *.jpeg
 *.jpg
 *.png
-quick_test.py
