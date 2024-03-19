@@ -40,18 +40,19 @@ def stringify_tuple_list(pixels_list):
 
 
 ## Places pixels from source array into appropriate cluster based on k_colors
-# @param pixels - source pixels array (list of RGB tuples)
+# @param pixels_with_coords - list of pixels with coords ((x, y), (r, g, b))
 # @param k_colors - current representative pixels (list of RGB tuples, length k)
 # @param k_clusters - current clusters of pixels (list of lists, each inner list is list of RGB tuples)
 #
-def group_pixels(pixels, k_colors, k_clusters):
+def group_pixels(pixels_with_coords, k_colors, k_clusters):
     # Iterate over pixels
-    for i in range(len(pixels)):
-        curr_pixel = pixels[i]
+    for i in range(len(pixels_with_coords)):
+        curr_pixel_with_coords = pixels_with_coords[i]
+        curr_pixel = curr_pixel_with_coords[1]
         # Get the cluster index for current pixel based on min. squared Euclidean distance
         cluster_idx = get_cluster_id(curr_pixel, k_colors)
         # Place the pixel in the corresponding cluster
-        k_clusters[cluster_idx].append(curr_pixel)
+        k_clusters[cluster_idx].append(curr_pixel_with_coords)
 
 
 ## Determine the closest representative color to a given pixel
@@ -78,7 +79,7 @@ def get_cluster_id(pixel, k_colors):
 
 
 ## Calculate the average color in each of k clusters
-# @param k_clusters - clusters of pixels (list of k lists, each list contains RGB tuples)
+# @param k_clusters - clusters of pixels with coords (list of k lists, each list contains ((x, y), (r, g, b))
 # @return list of k RGB tuples
 #
 def update_k_colors(k_clusters):
@@ -90,11 +91,15 @@ def update_k_colors(k_clusters):
 
 
 ## Function to return an average pixel (average value in each channel) from a list of pixels
-# @param pixels_list - list of pixels (tuples of three ints)
+# @param cluster - list of pixel clusters (tuples of format ((x, y), (r, g, b))
 # @return tuple of three ints for one pixel
 #
-def get_average_pixel(pixels_list):
-    num_pixels = len(pixels_list)
+def get_average_pixel(cluster):
+
+    num_pixels = len(cluster)
+    pixels_list = []
+    for i in range(num_pixels):
+        pixels_list.append(cluster[i][1])
     sum_r, sum_g, sum_b = 0, 0, 0
     for pixel in pixels_list:
         sum_r += pixel[0]

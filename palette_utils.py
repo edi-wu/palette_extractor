@@ -58,7 +58,7 @@ def create_appended_palette(src_image_array, mode, img_width, img_height, k_colo
         canvas_height = canvas_height + GAP + max(MIN_PALETTE_DIMENSION, round(shorter_dimension / 2))
         orientation = 'L'
 
-    # Create copy of original image, initially all black
+    # Create copy of original image, initially all white
     result_img = Image.new(mode, (canvas_width, canvas_height), color=(255, 255, 255))
     result_img_array = result_img.load()
 
@@ -68,9 +68,9 @@ def create_appended_palette(src_image_array, mode, img_width, img_height, k_colo
             result_img_array[x, y] = src_image_array[x, y]
 
     # Map k_clusters to a proportional length value in pixels
-    k_colors_lengths = k_clusters
-    for i in range(len(k_colors_lengths)):
-        k_colors_lengths[i] = len(k_colors_lengths[i])
+    k_colors_lengths = []
+    for i in range(len(k_clusters)):
+        k_colors_lengths.append(len(k_clusters[i]))
     total_pixels = sum(k_colors_lengths)
     for i in range(len(k_colors_lengths)):
         k_colors_lengths[i] = round((k_colors_lengths[i] / total_pixels) * longer_dimension)
@@ -109,31 +109,24 @@ def create_appended_palette(src_image_array, mode, img_width, img_height, k_colo
     return result_img
 
 
-## Creates a copy of the original image except that all pixels have been replaced by the representative color of their
-# cluster
+## Creates a copy of the original image except that all pixels have been replaced by
+## the representative color of their cluster
+# @param mode - mode of original image (used to make copy)
+# @param img_width - width of original image
+# @param img_height - height of original image
+# @param k_clusters - clusters of coords, pixel tuples
 # @param k_colors - resulting k_colors from k-means clustering (list of RGB tuples)
 # @return PIL image object of a copy of original image, with all pixels replaced by their representative
 #
-def create_reduced_image(k_colors):
-    # Default dimensions for palette--can be adjusted later
-    IMG_HEIGHT = 200
-    WIDTH_PER_COLOR = 100
+def create_reduced_image(mode, img_width, img_height, k_clusters, k_colors):
+    result_img = Image.new(mode, (img_width, img_height), color=(255, 255, 255))
+    result_img_array = result_img.load()
 
-    # Create initial black image and get its pixels array (PIL PixelAccess object)
-    img = Image.new("RGB", (WIDTH_PER_COLOR * len(k_colors), IMG_HEIGHT))
-    pixel_array = img.load()
-
-    # Update image with colors
     for i in range(len(k_colors)):
-        curr_color = k_colors[i]
+        replacement_color = k_colors[i]
+        pixel_cluster = k_clusters[i]
+        for pixel in pixel_cluster:
+            x, y = pixel[0]
+            result_img_array[x, y] = replacement_color
 
-        # Determine min and max x value of each color strip
-        curr_min_x = WIDTH_PER_COLOR * i
-        curr_max_x = curr_min_x + WIDTH_PER_COLOR
-
-        # Fill each vertical strip with the right color
-        for x in range(curr_min_x, curr_max_x):
-            for y in range(IMG_HEIGHT):
-                pixel_array[x, y] = curr_color
-
-    return img
+    return result_img

@@ -18,9 +18,9 @@ class K_Means:
     # @param log_file_name - string for the log file name
     # @param img_extension - string for the extension of the original image
     # @param palette_replace - bool for whether to create copies of original with colors replaced by palette colors
-    # src_pixels: list of RGB tuples for all pixels in source image
+    # src_pixels: list of coords & RGB tuples ((x, y), (r, g, b)) for the source image
     # k_colors: list of RGB tuples
-    # k_clusters: list of lists, each list contains RGB tuples
+    # k_clusters: list of lists, each list contains a tuple of coords and RGB values ((x, y), (r, g, b))
     def __init__(self, project_name, k_values, file_path, num_runs, log_file_name, img_extension, palette_replace):
         self.project_name = project_name
         self.file_path = file_path
@@ -30,7 +30,7 @@ class K_Means:
         self.img_extension = img_extension
         self.palette_replace = palette_replace
 
-        self.src_pixels = []
+        self.src_pixels_with_coords = []
         self.k_colors = []
         self.k_clusters = [[]]
 
@@ -49,7 +49,7 @@ class K_Means:
             # Obtain list of pixels as RGB tuples
             for x in range(img_width):
                 for y in range(img_height):
-                    self.src_pixels.append(src_image_array[x, y])
+                    self.src_pixels_with_coords.append(((x, y), (src_image_array[x, y])))
 
             # Loop to run n times for specified values of k (single or ranged)
             k_start, k_end, k_interval = self.k_values
@@ -106,7 +106,7 @@ class K_Means:
             last_k_colors = self.k_colors[:]
 
             # Place all pixels into clusters, each ith cluster corresponds to ith color in k_colors
-            k_means_utils.group_pixels(self.src_pixels, self.k_colors, self.k_clusters)
+            k_means_utils.group_pixels(self.src_pixels_with_coords, self.k_colors, self.k_clusters)
 
             # Update k_colors by getting new representative color from each cluster,
             ## where the representative color is the average color by RGB values
@@ -147,5 +147,5 @@ class K_Means:
         if self.palette_replace:
             reduced_image_path = (f"./results/{self.project_name}_[r]_run_{run_num + 1}_k_{k}_"
                                   f"{ctime().replace(" ", "_")}{self.img_extension}")
-            reduced_image = palette_utils.create_reduced_image(self.k_colors)
+            reduced_image = palette_utils.create_reduced_image(mode, img_width, img_height, self.k_clusters, self.k_colors)
             reduced_image.save(reduced_image_path)
