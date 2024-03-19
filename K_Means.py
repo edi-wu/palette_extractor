@@ -4,8 +4,9 @@
 
 from PIL import Image
 from Logger import Logger
-from time import perf_counter
+from time import perf_counter, ctime
 import k_means_utils
+import palette_utils
 
 
 class K_Means:
@@ -31,7 +32,7 @@ class K_Means:
 
     ## Main function to run k-means
     def run(self):
-        print('Please wait... running k-means clustering.')
+        print('\nPlease wait... running k-means clustering.')
 
         with Image.open(self.file_path) as img, Logger(self.log_file_name) as logger:
 
@@ -49,7 +50,7 @@ class K_Means:
             # Loop to run n times for specified values of k (single or ranged)
             k_start, k_end, k_interval = self.k_values
             for run_num in range(self.num_runs):
-                logger.log('Run: ' + str(run_num + 1))
+                logger.log(f"{'~' * 6} Run #{run_num + 1} of {self.num_runs} {'~' * 6}\n")
                 for k in range(k_start, k_end + 1, k_interval):
                     logger.log("k = " + str(k))
                     # Initialize k_clusters based on current k value
@@ -57,12 +58,14 @@ class K_Means:
                     try:
                         # Run k-means algorithm
                         self.run_k_means(src_image_array, img_height, img_width, k, logger)
-                        # Create result images
-                        ## TODO: programmatically determine result img name
+                        # Create result palette images
                         ## TODO: append palette to image; also do pixel replacements
-                        palette_img = k_means_utils.create_palette(self.k_colors)
-                        palette_img.save("./results/palette.png")
+                        palette_img_path = (f"./results/{self.project_name}_run_{run_num + 1}_k_{k}_"
+                                            f"{ctime().replace(" ", "_")}.png")
+                        palette_img = palette_utils.create_palette(self.k_colors)
+                        palette_img.save(palette_img_path)
                     except Exception as e:
+                        print('Quitting current run due to error: ' + str(e))
                         logger.log('Quitting current run due to error: ' + str(e))
 
             # Perform any necessary cleanup / analysis
