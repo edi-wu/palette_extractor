@@ -12,6 +12,7 @@ def main():
     # src_images/img.jpeg
     relative_path = input("Enter file path relative to current directory: ")
     file_path = os.path.join(os.getcwd(), relative_path)
+    img_extension = f".{relative_path.rsplit(".", 1)[1]}"
     project_name = input("Enter project or image name: ")
 
     # Prompt user for k values: either single value or ranged
@@ -31,6 +32,13 @@ def main():
     # Prompt user for number of runs
     num_runs = int(input("Enter the number of runs using the specified k value(s): "))
 
+    # Prompt user to choose whether to create result images that are pixel-replaced
+    user_input = input("In addition to resulting palette, also create copy of original image"
+                       " in which all pixels are replaced with their representative color? (Y/N): ")
+    palette_replace = False
+    if user_input.upper() == 'Y':
+        palette_replace = True
+
     # Create the log file name based on above info
     log_file_name = f"{project_name}__{str(num_runs)}x_"
     if k_option == "S":
@@ -39,9 +47,10 @@ def main():
         log_file_name += f"({k_start}_{k_end}_{k_interval})__"
     log_file_name += time.ctime().replace(" ", "_")
 
-    k_means_process = K_Means(project_name, k_values, file_path, num_runs, log_file_name)
+    k_means_process = K_Means(project_name, k_values, file_path, num_runs, log_file_name, img_extension, palette_replace)
     k_means_process.run()
 
 
 if __name__ == "__main__":
-    cProfile.run('main()')
+    # cProfile.run('main()')
+    main()

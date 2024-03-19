@@ -16,15 +16,19 @@ class K_Means:
     # @param file_path - file path for source image
     # @param num_runs - int number of runs for this image
     # @param log_file_name - string for the log file name
+    # @param img_extension - string for the extension of the original image
+    # @param palette_replace - bool for whether to create copies of original with colors replaced by palette colors
     # src_pixels: list of RGB tuples for all pixels in source image
     # k_colors: list of RGB tuples
     # k_clusters: list of lists, each list contains RGB tuples
-    def __init__(self, project_name, k_values, file_path, num_runs, log_file_name):
+    def __init__(self, project_name, k_values, file_path, num_runs, log_file_name, img_extension, palette_replace):
         self.project_name = project_name
         self.file_path = file_path
         self.k_values = k_values
         self.num_runs = num_runs
         self.log_file_name = log_file_name
+        self.img_extension = img_extension
+        self.palette_replace = palette_replace
 
         self.src_pixels = []
         self.k_colors = []
@@ -58,12 +62,8 @@ class K_Means:
                     try:
                         # Run k-means algorithm
                         self.run_k_means(src_image_array, img_height, img_width, k, logger)
-                        # Create result palette images
-                        ## TODO: append palette to image; also do pixel replacements
-                        palette_img_path = (f"./results/{self.project_name}_run_{run_num + 1}_k_{k}_"
-                                            f"{ctime().replace(" ", "_")}.png")
-                        palette_img = palette_utils.create_palette(self.k_colors)
-                        palette_img.save(palette_img_path)
+                        # Create result visualization
+                        self.visualize_results(src_image_array, img.mode, img_width, img_height, run_num, k)
                     except Exception as e:
                         print('Quitting current run due to error: ' + str(e))
                         logger.log('Quitting current run due to error: ' + str(e))
@@ -127,3 +127,25 @@ class K_Means:
         # Use perf counter for end time and log time elapsed
         stop_time = perf_counter()
         logger.log("Time elapsed: " + str(stop_time - start_time) + " seconds.\n")
+
+    # Function to create result images showing the palette
+    # @param src_image_array - image array of source image
+    # @param mode - mode of source image (used for making a copy)
+    # @param img_width - width of original image (used for making a copy)
+    # @param img_height - height of original image (used for making a copy)
+    # @param run_num - number of the current run (used in image path)
+    # @param k - k value of current run (used in image path)
+    #
+    def visualize_results(self, src_image_array, mode, img_width, img_height, run_num, k):
+        # Create the palette appended to original image
+        palette_img_path = (f"./results/{self.project_name}_run_{run_num + 1}_k_{k}_"
+                            f"{ctime().replace(" ", "_")}{self.img_extension}")
+        palette_img = palette_utils.create_appended_palette(src_image_array, mode, img_width, img_height, self.k_colors, self.k_clusters)
+        palette_img.save(palette_img_path)
+
+        # Create copy of original with pixels replaced by representative colors
+        if self.palette_replace:
+            reduced_image_path = (f"./results/{self.project_name}_[r]_run_{run_num + 1}_k_{k}_"
+                                  f"{ctime().replace(" ", "_")}{self.img_extension}")
+            reduced_image = palette_utils.create_reduced_image(self.k_colors)
+            reduced_image.save(reduced_image_path)
