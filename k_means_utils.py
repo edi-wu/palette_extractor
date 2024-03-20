@@ -68,15 +68,23 @@ def get_cluster_id(pixel, k_colors):
     for i in range(len(k_colors)):
         curr_k_color = k_colors[i]
         # Calculate squared Euclidean distance between pixel and current k_color
-        sq_euclidean_distance = ((pixel[0] - curr_k_color[0]) ** 2
-                                 + (pixel[1] - curr_k_color[1]) ** 2
-                                 + (pixel[2] - curr_k_color[2]) ** 2)
+        sq_euclidean_distance = get_sq_euclidean_dist(pixel, curr_k_color)
         # Update min distance and index of min as needed
         if sq_euclidean_distance < min_distance:
             min_distance = sq_euclidean_distance
             idx_of_closest = i
     return idx_of_closest
 
+
+## Helper function to calculate the squared Euclidean distance between two pixels
+# @param pixel_1 - first pixel (RGB tuple)
+# @param pixel_2 - second pixel (RGB tuple)
+# @return the squared Euclidean distance (int)
+#
+def get_sq_euclidean_dist(pixel1, pixel2):
+    return ((pixel1[0] - pixel2[0]) ** 2 +
+            (pixel1[1] - pixel2[1]) ** 2 +
+            (pixel1[2] - pixel2[2]) ** 2)
 
 ## Calculate the average color in each of k clusters
 # @param k_clusters - clusters of pixels with coords (list of k lists, each list contains ((x, y), (r, g, b))
@@ -122,3 +130,19 @@ def compare_tuple_lists(list_1, list_2):
         if list_1[i] != list_2[i]:
             return False
     return True
+
+
+## Function to calculate total SSE (sum of squared errors) for the resulting clusters of a given k
+# @param k_colors - the resulting representative k_colors (centroids)
+# @param k_clusters - list of lists, where each list is a cluster of (coords, pixel) tuples
+# @return sum of squared errors (squared Euclidean distances) between all pixels and their respective centroids
+#
+def get_total_SSE(k_colors, k_clusters):
+    total_SSE = 0
+    for i in range(len(k_colors)):
+        centroid_pixel = k_colors[i]
+        pixel_cluster = k_clusters[i]
+        # Each pixel has format ((x, y), (r, g, b)) so need to use the RGB part
+        for pixel in pixel_cluster:
+            total_SSE += get_sq_euclidean_dist(centroid_pixel, pixel[1])
+    return total_SSE

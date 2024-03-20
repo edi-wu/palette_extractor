@@ -64,11 +64,15 @@ class K_Means:
                         self.run_k_means(src_image_array, img_height, img_width, k, logger)
                         # Create result visualization
                         self.visualize_results(src_image_array, img.mode, img_width, img_height, run_num, k)
+                        # Calculate and log total SSE for the given k
+                        total_SSE = k_means_utils.get_total_SSE(self.k_colors, self.k_clusters)
+                        logger.log(f"Total SSE: {total_SSE} (k = {k})")
+                        logger.log(f"{'~' * 18}\n")
                     except Exception as e:
                         print('Quitting current run due to error: ' + str(e))
                         logger.log('Quitting current run due to error: ' + str(e))
 
-            # Perform any necessary cleanup / analysis
+            # Perform any necessary cleanup / analysis / plotting
 
     # Runs k-means clustering algorithm once
     # @param src_image_array - PixelAccess array for source images
