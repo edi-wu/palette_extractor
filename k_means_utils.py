@@ -86,6 +86,7 @@ def get_sq_euclidean_dist(pixel1, pixel2):
             (pixel1[1] - pixel2[1]) ** 2 +
             (pixel1[2] - pixel2[2]) ** 2)
 
+
 ## Calculate the average color in each of k clusters
 # @param k_clusters - clusters of pixels with coords (list of k lists, each list contains ((x, y), (r, g, b))
 # @return list of k RGB tuples

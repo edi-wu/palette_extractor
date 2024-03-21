@@ -5,6 +5,7 @@
 from PIL import Image
 from Logger import Logger
 from time import perf_counter, ctime
+from matplotlib import pyplot as plt
 import k_means_utils
 import palette_utils
 
@@ -21,6 +22,7 @@ class K_Means:
     # src_pixels: list of coords & RGB tuples ((x, y), (r, g, b)) for the source image
     # k_colors: list of RGB tuples
     # k_clusters: list of lists, each list contains a tuple of coords and RGB values ((x, y), (r, g, b))
+    # SSE: list of longs, each representing sum of squared error for a given k (when used with a range of k)
     def __init__(self, project_name, k_values, file_path, num_runs, log_file_name, img_extension, palette_replace):
         self.project_name = project_name
         self.file_path = file_path
@@ -33,6 +35,7 @@ class K_Means:
         self.src_pixels_with_coords = []
         self.k_colors = []
         self.k_clusters = [[]]
+        self.SSE = []
 
     ## Main function to run k-means
     def run(self):
@@ -65,16 +68,20 @@ class K_Means:
                         # Create result visualization
                         self.visualize_results(src_image_array, img.mode, img_width, img_height, run_num, k)
                         # Calculate and log total SSE for the given k
-                        total_SSE = k_means_utils.get_total_SSE(self.k_colors, self.k_clusters)
-                        logger.log(f"Total SSE: {total_SSE} (k = {k})")
-                        logger.log(f"{'~' * 18}\n")
+                        sse_value = k_means_utils.get_total_SSE(self.k_colors, self.k_clusters)
+                        self.SSE.append(sse_value)
+                        logger.log(f"SSE: {sse_value} (k = {k})")
+                        logger.log(f"\n{'~' * 18}\n")
                     except Exception as e:
                         print('Quitting current run due to error: ' + str(e))
                         logger.log('Quitting current run due to error: ' + str(e))
 
             # Perform any necessary cleanup / analysis / plotting
+            # Plot total SSE against k if used a range of k values
+            if k_start != k_end:
+                self.plot_SSE()
 
-    # Runs k-means clustering algorithm once
+    ## Runs k-means clustering algorithm once
     # @param src_image_array - PixelAccess array for source images
     # @param h - height of image (int)
     # @param w - width of image (int)
@@ -132,7 +139,7 @@ class K_Means:
         stop_time = perf_counter()
         logger.log("Time elapsed: " + str(stop_time - start_time) + " seconds.\n")
 
-    # Function to create result images showing the palette
+    ## Function to create result images showing the palette
     # @param src_image_array - image array of source image
     # @param mode - mode of source image (used for making a copy)
     # @param img_width - width of original image (used for making a copy)
@@ -153,3 +160,25 @@ class K_Means:
                                   f"{ctime().replace(" ", "_")}{self.img_extension}")
             reduced_image = palette_utils.create_reduced_image(mode, img_width, img_height, self.k_clusters, self.k_colors)
             reduced_image.save(reduced_image_path)
+
+    ## Plots SSE against k values
+    #
+    def plot_SSE(self):
+        # Create list of k values for x-axis data
+        x = []
+        k_start, k_end, k_interval = self.k_values
+        for i in range(k_start, k_end + 1, k_interval):
+            x.append(i)
+        # Divide SSE values by a constant factor (million) for y-axis data
+        y = []
+        for i in range(len(self.SSE)):
+            y.append(self.SSE[i] / (10 ** 6))
+        # Create the plot
+        plt.plot(x, y, '-o')
+        plt.xlabel("k")
+        plt.ylabel("SSE (millions)")
+        # Save plot to file using appropriate path
+        plot_path = (f"./plots/{self.project_name}_k_({k_start}_{k_end}_{k_interval})"
+                     f"{ctime().replace(" ", "_")}.png")
+        plt.savefig(plot_path)
+        # plt.show()
