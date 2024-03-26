@@ -23,6 +23,7 @@ class K_Means:
     # k_colors: list of RGB tuples
     # k_clusters: list of lists, each list contains a tuple of coords and RGB values ((x, y), (r, g, b))
     # SSE: dict mapping k value to list of longs, each list logs SSE of each run at that k value
+    # total_time: total time elapsed in seconds for suite of runs
     def __init__(self, project_name, k_values, file_path, num_runs, log_file_name, img_extension, palette_replace):
         self.project_name = project_name
         self.file_path = file_path
@@ -36,6 +37,7 @@ class K_Means:
         self.k_colors = []
         self.k_clusters = [[]]
         self.SSE = {}
+        self.total_time = 0
 
     ## Main function to run k-means
     def run(self):
@@ -83,6 +85,11 @@ class K_Means:
             # Plot total SSE against k if used a range of k values
             if k_start != k_end:
                 self.plot_SSE()
+
+            # Log total time elapsed for this suite of runs
+            logger.log(f"Summary: \nNumber of runs: {self.num_runs}\n"
+                       f"k_start: {k_start}; k_end: {k_end}; k_interval: {k_interval}\n"
+                       f"Total time elapsed: {self.total_time} seconds.")
 
     ## Runs k-means clustering algorithm once
     # @param src_image_array - PixelAccess array for source images
@@ -140,7 +147,9 @@ class K_Means:
 
         # Use perf counter for end time and log time elapsed
         stop_time = perf_counter()
-        logger.log("Time elapsed: " + str(stop_time - start_time) + " seconds.\n")
+        time_elapsed = stop_time - start_time
+        self.total_time += time_elapsed
+        logger.log("Time elapsed: " + str(time_elapsed) + " seconds.\n")
 
     ## Function to create result images showing the palette
     # @param src_image_array - image array of source image
