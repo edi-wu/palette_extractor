@@ -107,6 +107,8 @@ def update_k_colors(k_clusters):
 def get_average_pixel(cluster):
 
     num_pixels = len(cluster)
+    if num_pixels == 0:
+        raise ZeroDivisionError("Cluster contains 0 pixels")
     pixels_list = []
     for i in range(num_pixels):
         pixels_list.append(cluster[i][1])
