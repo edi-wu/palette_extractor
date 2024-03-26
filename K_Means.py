@@ -22,7 +22,7 @@ class K_Means:
     # src_pixels: list of coords & RGB tuples ((x, y), (r, g, b)) for the source image
     # k_colors: list of RGB tuples
     # k_clusters: list of lists, each list contains a tuple of coords and RGB values ((x, y), (r, g, b))
-    # SSE: list of longs, each representing sum of squared error for a given k (when used with a range of k)
+    # SSE: dict mapping k value to list of longs, each list logs SSE of each run at that k value
     def __init__(self, project_name, k_values, file_path, num_runs, log_file_name, img_extension, palette_replace):
         self.project_name = project_name
         self.file_path = file_path
@@ -35,7 +35,7 @@ class K_Means:
         self.src_pixels_with_coords = []
         self.k_colors = []
         self.k_clusters = [[]]
-        self.SSE = []
+        self.SSE = {}
 
     ## Main function to run k-means
     def run(self):
@@ -56,6 +56,9 @@ class K_Means:
 
             # Loop to run n times for specified values of k (single or ranged)
             k_start, k_end, k_interval = self.k_values
+            # Initialize elements in SSE dict to empty lists
+            for k in range(k_start, k_end + 1, k_interval):
+                self.SSE[k] = []
             for run_num in range(self.num_runs):
                 logger.log(f"{'~' * 6} Run #{run_num + 1} of {self.num_runs} {'~' * 6}\n")
                 for k in range(k_start, k_end + 1, k_interval):
@@ -69,7 +72,7 @@ class K_Means:
                         self.visualize_results(src_image_array, img.mode, img_width, img_height, run_num, k)
                         # Calculate and log total SSE for the given k
                         sse_value = k_means_utils.get_total_SSE(self.k_colors, self.k_clusters)
-                        self.SSE.append(sse_value)
+                        self.SSE[k].append(sse_value)
                         logger.log(f"SSE: {sse_value} (k = {k})")
                         logger.log(f"\n{'~' * 18}\n")
                     except Exception as e:
@@ -166,21 +169,23 @@ class K_Means:
     ## Plots SSE against k values
     #
     def plot_SSE(self):
-        # Create list of k values for x-axis data
+        # Create lists for x and y axes
         x = []
-        k_start, k_end, k_interval = self.k_values
-        for i in range(k_start, k_end + 1, k_interval):
-            x.append(i)
-        # Divide SSE values by a constant factor (million) for y-axis data
         y = []
-        for i in range(len(self.SSE)):
-            y.append(self.SSE[i] / (10 ** 6))
+        # Get start, end, and interval for k
+        k_start, k_end, k_interval = self.k_values
+        # Append k to x-axis values
+        # Append average of SSE for a given k to y-axis values
+        # Divide SSE values by a constant factor (million) for y-axis data
+        for k in range(k_start, k_end + 1, k_interval):
+            x.append(k)
+            y.append((sum(self.SSE[k]) / len(self.SSE[k])) / (10 ** 6))
         # Create the plot
         plt.plot(x, y, '-o')
         plt.xlabel("k")
         plt.ylabel("SSE (millions)")
         # Save plot to file using appropriate path
-        plot_path = (f"./plots/{k_means_utils.get_timestamp_str()}__{self.project_name}_k_"
-                     f"({k_start}_{k_end}_{k_interval}).png")
+        plot_path = (f"./plots/{k_means_utils.get_timestamp_str()}__{self.project_name}_{self.num_runs}x_"
+                     f"k_({k_start}_{k_end}_{k_interval}).png")
         plt.savefig(plot_path)
         # plt.show()
