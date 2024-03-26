@@ -2,6 +2,7 @@
 ## Description: Module for utility functions used in k-means
 
 import random
+from time import localtime, strftime
 
 
 ## Returns k sets of distinct coordinates given specified bounds
@@ -147,3 +148,10 @@ def get_total_SSE(k_colors, k_clusters):
         for pixel in pixel_cluster:
             total_SSE += get_sq_euclidean_dist(centroid_pixel, pixel[1])
     return total_SSE
+
+
+## Function to generate a sortable timestamp string
+# @return timestamp string in format yy/mm/dd h:m:s
+#
+def get_timestamp_str():
+    return strftime("%Y_%m_%d_%H:%M:%S", localtime())

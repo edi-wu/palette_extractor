@@ -149,16 +149,18 @@ class K_Means:
     #
     def visualize_results(self, src_image_array, mode, img_width, img_height, run_num, k):
         # Create the palette appended to original image
-        palette_img_path = (f"./results/{self.project_name}_run_{run_num + 1}_k_{k}_"
-                            f"{ctime().replace(" ", "_")}{self.img_extension}")
-        palette_img = palette_utils.create_appended_palette(src_image_array, mode, img_width, img_height, self.k_colors, self.k_clusters)
+        palette_img_path = (f"./results/{k_means_utils.get_timestamp_str()}__{self.project_name}_run_{run_num + 1}_k_"
+                            f"{k}{self.img_extension}")
+        palette_img = palette_utils.create_appended_palette(src_image_array, mode, img_width, img_height,
+                                                            self.k_colors, self.k_clusters)
         palette_img.save(palette_img_path)
 
         # Create copy of original with pixels replaced by representative colors
         if self.palette_replace:
-            reduced_image_path = (f"./results/{self.project_name}_[r]_run_{run_num + 1}_k_{k}_"
-                                  f"{ctime().replace(" ", "_")}{self.img_extension}")
-            reduced_image = palette_utils.create_reduced_image(mode, img_width, img_height, self.k_clusters, self.k_colors)
+            reduced_image_path = (f"./results/{k_means_utils.get_timestamp_str()}{self.project_name}_[r]_run_"
+                                  f"{run_num + 1}_k_{k}{self.img_extension}")
+            reduced_image = palette_utils.create_reduced_image(mode, img_width, img_height,
+                                                               self.k_clusters, self.k_colors)
             reduced_image.save(reduced_image_path)
 
     ## Plots SSE against k values
@@ -178,7 +180,7 @@ class K_Means:
         plt.xlabel("k")
         plt.ylabel("SSE (millions)")
         # Save plot to file using appropriate path
-        plot_path = (f"./plots/{self.project_name}_k_({k_start}_{k_end}_{k_interval})"
-                     f"{ctime().replace(" ", "_")}.png")
+        plot_path = (f"./plots/{k_means_utils.get_timestamp_str()}__{self.project_name}_k_"
+                     f"({k_start}_{k_end}_{k_interval}).png")
         plt.savefig(plot_path)
         # plt.show()

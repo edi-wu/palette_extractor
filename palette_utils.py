@@ -3,6 +3,7 @@
 
 from PIL import Image
 
+
 ## Creates basic palette bands image
 # @param k_colors - resulting k_colors from k-means clustering (list of RGB tuples)
 # @return PIL image object of a copy of original image, with all pixels replaced by their representative
