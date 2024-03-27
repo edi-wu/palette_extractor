@@ -157,3 +157,16 @@ def get_total_SSE(k_colors, k_clusters):
 #
 def get_timestamp_str():
     return strftime("%Y_%m_%d_%H:%M:%S", localtime())
+
+
+## Function to return weight of a pixel based on squared distance from nearest centroid
+# @param centroids - list of RGB tuples (centroids chosen so far)
+# @param pixel - RGB tuple of pixel in question
+#
+def get_weight(centroids, pixel):
+    min_distance = float("inf")
+    for centroid in centroids:
+        distance = get_sq_euclidean_dist(centroid, pixel)
+        if distance < min_distance:
+            min_distance = distance
+    return min_distance

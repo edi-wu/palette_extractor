@@ -4,8 +4,9 @@
 
 from PIL import Image
 from Logger import Logger
-from time import perf_counter, ctime
+from time import perf_counter
 from matplotlib import pyplot as plt
+from random import choices
 import k_means_utils
 import palette_utils
 
@@ -71,7 +72,7 @@ class K_Means:
                         # Run k-means algorithm
                         self.run_k_means(src_image_array, img_height, img_width, k, logger)
                         # Create result visualization
-                        self.visualize_results(src_image_array, img.mode, img_width, img_height, run_num, k)
+                        # self.visualize_results(src_image_array, img.mode, img_width, img_height, run_num, k)
                         # Calculate and log total SSE for the given k
                         sse_value = k_means_utils.get_total_SSE(self.k_colors, self.k_clusters)
                         self.SSE[k].append(sse_value)
@@ -80,6 +81,9 @@ class K_Means:
                     except Exception as e:
                         print('Quitting current run due to error: ' + str(e))
                         logger.log('Quitting current run due to error: ' + str(e))
+                    finally:
+                        # Clean up to reset k_colors for next run
+                        self.k_colors = []
 
             # Perform any necessary cleanup / analysis / plotting
             # Plot total SSE against k if used a range of k values
@@ -106,14 +110,26 @@ class K_Means:
         # if k % 2 == 0:
         #     raise ValueError("Testing quitting and logging exception, k = " + str(k))
 
-        # Get the initial k colors (list of pixel tuples) by randomly selecting coordinates
+        # Method 1: Get the initial k colors (list of pixel tuples) by randomly selecting coordinates
         ## Coordinates' max value is 1 less than dimension
-        k_random_coords = k_means_utils.get_k_random_coords(k, w - 1, h - 1)
-        self.k_colors = k_means_utils.map_coords_to_pixels(k_random_coords, src_image_array)
+        ## Consider putting this in a function to use with switch statement
+        # k_random_coords = k_means_utils.get_k_random_coords(k, w - 1, h - 1)
+        # self.k_colors = k_means_utils.map_coords_to_pixels(k_random_coords, src_image_array)
 
         # Print and log initial k_colors
-        print("Initial k_colors (randomly selected): ", self.k_colors)
-        logger.log("Initial k_colors (randomly selected): ")
+        # print("Initial k_colors (randomly selected): ", self.k_colors)
+        # logger.log("Initial k_colors (randomly selected): ")
+        # logger.log(k_means_utils.stringify_tuple_list(self.k_colors) + '\n')
+
+        # Method 2: Get initial k colors via k-means++ selection
+        kmpp_start_time = perf_counter()
+        self.run_k_means_plus_plus(k)
+        kmpp_stop_time = perf_counter()
+        logger.log(f"Time elapsed for k-means++: {kmpp_stop_time - kmpp_start_time} seconds")
+
+        # Print and log initial k_colors
+        print("Initial k_colors (k-means++): ", self.k_colors)
+        logger.log("Initial k_colors (k-means++): ")
         logger.log(k_means_utils.stringify_tuple_list(self.k_colors) + '\n')
 
         # Iteration number for logging
@@ -149,7 +165,29 @@ class K_Means:
         stop_time = perf_counter()
         time_elapsed = stop_time - start_time
         self.total_time += time_elapsed
-        logger.log("Time elapsed: " + str(time_elapsed) + " seconds.\n")
+        logger.log("Time elapsed for k-means algorithm: " + str(time_elapsed) + " seconds\n")
+
+    ## Function to update self.k_colors with k initial centroids using k-means++
+    # @param k - int value of k for current run
+    #
+    def run_k_means_plus_plus(self, k):
+        print(f"Running k_means++ to select {k} centroids\n")
+        # Initially select one pixel at random
+        ## NB choices returns list of 1 item by default, use [0] to access pixel, [1] to access its RGB tuple
+        self.k_colors.append(choices(self.src_pixels_with_coords)[0][1])
+        # Create list of weights proportional to sq dist of each pixel to nearest selected center
+        weights = []
+        for i in range(len(self.src_pixels_with_coords)):
+            curr_pixel = self.src_pixels_with_coords[i][1]
+            weights.append(k_means_utils.get_weight(self.k_colors, curr_pixel))
+        # While not k have been chosen:
+        while len(self.k_colors) < k:
+            # Choose next center
+            self.k_colors.append(choices(self.src_pixels_with_coords, weights=weights)[0][1])
+            # Update weights
+            for i in range(len(self.src_pixels_with_coords)):
+                curr_pixel = self.src_pixels_with_coords[i][1]
+                weights[i] = k_means_utils.get_weight(self.k_colors, curr_pixel)
 
     ## Function to create result images showing the palette
     # @param src_image_array - image array of source image
