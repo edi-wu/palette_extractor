@@ -20,12 +20,13 @@ class K_Means:
     # @param log_file_name - string for the log file name
     # @param img_extension - string for the extension of the original image
     # @param palette_replace - bool for whether to create copies of original with colors replaced by palette colors
+    # @param do_resize - int for % to resize down to; default is 100
     # src_pixels: list of coords & RGB tuples ((x, y), (r, g, b)) for the source image
     # k_colors: list of RGB tuples
     # k_clusters: list of lists, each list contains a tuple of coords and RGB values ((x, y), (r, g, b))
     # SSE: dict mapping k value to list of longs, each list logs SSE of each run at that k value
     # total_time: total time elapsed in seconds for suite of runs
-    def __init__(self, project_name, k_values, file_path, num_runs, log_file_name, img_extension, palette_replace):
+    def __init__(self, project_name, k_values, file_path, num_runs, log_file_name, img_extension, palette_replace, resize_level):
         self.project_name = project_name
         self.file_path = file_path
         self.k_values = k_values
@@ -33,6 +34,7 @@ class K_Means:
         self.log_file_name = log_file_name
         self.img_extension = img_extension
         self.palette_replace = palette_replace
+        self.resize_level = resize_level
 
         self.src_pixels_with_coords = []
         self.k_colors = []
@@ -47,6 +49,10 @@ class K_Means:
         with Image.open(self.file_path) as img, Logger(self.log_file_name) as logger:
 
             logger.log('Project Name: ' + self.project_name + '\n\n')
+
+            if self.resize_level < 100:
+                resize_fraction = self.resize_level / 100
+                img = img.resize((round(img.width * resize_fraction), round(img.height * resize_fraction)))
 
             # Load image array
             src_image_array = img.load()
@@ -72,7 +78,7 @@ class K_Means:
                         # Run k-means algorithm
                         self.run_k_means(src_image_array, img_height, img_width, k, logger)
                         # Create result visualization
-                        # self.visualize_results(src_image_array, img.mode, img_width, img_height, run_num, k)
+                        self.visualize_results(src_image_array, img.mode, img_width, img_height, run_num, k)
                         # Calculate and log total SSE for the given k
                         sse_value = k_means_utils.get_total_SSE(self.k_colors, self.k_clusters)
                         self.SSE[k].append(sse_value)
@@ -207,7 +213,7 @@ class K_Means:
 
         # Create copy of original with pixels replaced by representative colors
         if self.palette_replace:
-            reduced_image_path = (f"./results/{k_means_utils.get_timestamp_str()}{self.project_name}_[r]_run_"
+            reduced_image_path = (f"./results/{k_means_utils.get_timestamp_str()}__{self.project_name}_[r]_run_"
                                   f"{run_num + 1}_k_{k}{self.img_extension}")
             reduced_image = palette_utils.create_reduced_image(mode, img_width, img_height,
                                                                self.k_clusters, self.k_colors)

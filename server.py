@@ -33,7 +33,8 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         with open(FILE_NAME, "wb") as img:
             img.write(data)
         # Call UI tools function to run image processing module
-        present_menu()
+        # present_menu()
+        # Instantiate K-Means object and run process
         # Send response
         self.send_response(200)
         self.end_headers()
