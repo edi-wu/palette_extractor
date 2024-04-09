@@ -83,7 +83,7 @@ def create_appended_palette(src_image_array, mode, img_width, img_height, k_colo
     for i in range(len(k_colors_lengths)):
         map_length_to_color[k_colors_lengths[i]] = k_colors[i]
     sorted_length_color_tuples = sorted(map_length_to_color.items(), reverse=True)
-    print(f"the sorted palette band lengths are: {sorted_length_color_tuples}")
+    # print(f"the sorted palette band lengths are: {sorted_length_color_tuples}")
 
     # Write the palette section onto canvas based on orientation
     if orientation == 'P':

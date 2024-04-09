@@ -26,6 +26,7 @@ class K_Means:
     # k_clusters: list of lists, each list contains a tuple of coords and RGB values ((x, y), (r, g, b))
     # SSE: dict mapping k value to list of longs, each list logs SSE of each run at that k value
     # total_time: total time elapsed in seconds for suite of runs
+    # result_img_path: path to result image for server response
     def __init__(self, project_name, k_values, file_path, num_runs, log_file_name, img_extension, palette_replace, resize_level):
         self.project_name = project_name
         self.file_path = file_path
@@ -41,6 +42,7 @@ class K_Means:
         self.k_clusters = [[]]
         self.SSE = {}
         self.total_time = 0
+        self.result_img_path = ''
 
     ## Main function to run k-means
     def run(self):
@@ -78,7 +80,7 @@ class K_Means:
                         # Run k-means algorithm
                         self.run_k_means(src_image_array, img_height, img_width, k, logger)
                         # Create result visualization
-                        self.visualize_results(src_image_array, img.mode, img_width, img_height, run_num, k)
+                        self.result_img_path = self.visualize_results(src_image_array, img.mode, img_width, img_height, run_num, k)
                         # Calculate and log total SSE for the given k
                         sse_value = k_means_utils.get_total_SSE(self.k_colors, self.k_clusters)
                         self.SSE[k].append(sse_value)
@@ -100,6 +102,8 @@ class K_Means:
             logger.log(f"Summary: \nNumber of runs: {self.num_runs}\n"
                        f"k_start: {k_start}; k_end: {k_end}; k_interval: {k_interval}\n"
                        f"Total time elapsed: {self.total_time} seconds.")
+
+        return self.result_img_path
 
     ## Runs k-means clustering algorithm once
     # @param src_image_array - PixelAccess array for source images
@@ -210,6 +214,7 @@ class K_Means:
         palette_img = palette_utils.create_appended_palette(src_image_array, mode, img_width, img_height,
                                                             self.k_colors, self.k_clusters)
         palette_img.save(palette_img_path)
+        palette_img.close()
 
         # Create copy of original with pixels replaced by representative colors
         if self.palette_replace:
@@ -218,6 +223,10 @@ class K_Means:
             reduced_image = palette_utils.create_reduced_image(mode, img_width, img_height,
                                                                self.k_clusters, self.k_colors)
             reduced_image.save(reduced_image_path)
+            reduced_image.close()
+
+        # Return palette image path for server
+        return palette_img_path
 
     ## Plots SSE against k values
     #
