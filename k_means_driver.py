@@ -40,13 +40,12 @@ def main():
         palette_replace = True
 
     # Prompt user to choose whether to run at different resize levels
-    ## Available only for single k
     resize_level = 100
-    if k_option == "S":
-        user_input = input("Run at different image resize levels? (Y/N): ")
-        if user_input.upper() == 'Y':
-            user_input_int = int(input("Enter the % of image dimension to resize to: "))
-            resize_level = user_input_int
+    # if k_option == "S":
+    user_input = input("Run at different image resize levels? (Y/N): ")
+    if user_input.upper() == 'Y':
+        user_input_int = int(input("Enter the % of image dimension to resize to: "))
+        resize_level = user_input_int
 
     # Create the log file name based on above info
     log_file_name = f"{get_timestamp_str()}__{project_name}_{str(num_runs)}x_"
