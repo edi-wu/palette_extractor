@@ -3,6 +3,8 @@
 
 import random
 from time import localtime, strftime
+from colormath.color_objects import LabColor
+from colormath.color_diff import delta_e_cie2000
 
 
 ## Returns k sets of distinct coordinates given specified bounds
@@ -41,19 +43,20 @@ def stringify_tuple_list(pixels_list):
 
 
 ## Places pixels from source array into appropriate cluster based on k_colors
-# @param pixels_with_coords - list of pixels with coords ((x, y), (r, g, b))
+# @param pixels_with_coords - list of pixels as lab color tuples
 # @param k_colors - current representative pixels (list of RGB tuples, length k)
 # @param k_clusters - current clusters of pixels (list of lists, each inner list is list of RGB tuples)
 #
 def group_pixels(pixels_with_coords, k_colors, k_clusters):
     # Iterate over pixels
     for i in range(len(pixels_with_coords)):
-        curr_pixel_with_coords = pixels_with_coords[i]
-        curr_pixel = curr_pixel_with_coords[1]
+        # curr_pixel_with_coords = pixels_with_coords[i]
+        # curr_pixel = curr_pixel_with_coords[1]
+        curr_pixel = pixels_with_coords[i]
         # Get the cluster index for current pixel based on min. squared Euclidean distance
         cluster_idx = get_cluster_id(curr_pixel, k_colors)
         # Place the pixel in the corresponding cluster
-        k_clusters[cluster_idx].append(curr_pixel_with_coords)
+        k_clusters[cluster_idx].append(curr_pixel)
 
 
 ## Determine the closest representative color to a given pixel
@@ -69,10 +72,18 @@ def get_cluster_id(pixel, k_colors):
     for i in range(len(k_colors)):
         curr_k_color = k_colors[i]
         # Calculate squared Euclidean distance between pixel and current k_color
-        sq_euclidean_distance = get_sq_euclidean_dist(pixel, curr_k_color)
+        # sq_euclidean_distance = get_sq_euclidean_dist(pixel, curr_k_color)
         # Update min distance and index of min as needed
-        if sq_euclidean_distance < min_distance:
-            min_distance = sq_euclidean_distance
+        # if sq_euclidean_distance < min_distance:
+        #     min_distance = sq_euclidean_distance
+        #     idx_of_closest = i
+
+        # Calculate distance using delta e cie2000
+        pixel_obj = LabColor(pixel[0], pixel[1], pixel[2])
+        curr_k_color_obj = LabColor(curr_k_color[0], curr_k_color[1], curr_k_color[2])
+        dist = delta_e_cie2000(pixel_obj, curr_k_color_obj)
+        if dist < min_distance:
+            min_distance = dist
             idx_of_closest = i
     return idx_of_closest
 
@@ -111,16 +122,17 @@ def get_average_pixel(cluster):
         raise ZeroDivisionError("Cluster contains 0 pixels")
     pixels_list = []
     for i in range(num_pixels):
-        pixels_list.append(cluster[i][1])
+        pixels_list.append(cluster[i])
     sum_r, sum_g, sum_b = 0, 0, 0
     for pixel in pixels_list:
         sum_r += pixel[0]
         sum_g += pixel[1]
         sum_b += pixel[2]
-    return round(sum_r / num_pixels), round(sum_g / num_pixels), round(sum_b / num_pixels)
+    return (sum_r / num_pixels), (sum_g / num_pixels), (sum_b / num_pixels)
 
 
 ## Compares two lists of tuples for equality (same content in same order)
+## Use delta e cie2000 distance (threshold 1.0) to check if colors are close enough
 # @param list_1 - first list of tuples
 # @param list_2 - second list of tuples
 # @return True if lists contain the same content, False otherwise
@@ -131,7 +143,12 @@ def compare_tuple_lists(list_1, list_2):
         return False
     # Check equality of each tuple in order
     for i in range(len(list_1)):
-        if list_1[i] != list_2[i]:
+        # if list_1[i] != list_2[i]:
+        #     return False
+        color_1 = LabColor(list_1[i][0], list_1[i][1], list_1[i][2])
+        color_2 = LabColor(list_2[i][0], list_2[i][1], list_2[i][2])
+        dist = delta_e_cie2000(color_1, color_2)
+        if dist > 1.0:
             return False
     return True
 
@@ -148,7 +165,10 @@ def get_total_SSE(k_colors, k_clusters):
         pixel_cluster = k_clusters[i]
         # Each pixel has format ((x, y), (r, g, b)) so need to use the RGB part
         for pixel in pixel_cluster:
-            total_SSE += get_sq_euclidean_dist(centroid_pixel, pixel[1])
+            lab_color1 = LabColor(centroid_pixel[0], centroid_pixel[1], centroid_pixel[2])
+            lab_color2 = LabColor(pixel[0], pixel[1], pixel[2])
+            # total_SSE += get_sq_euclidean_dist(centroid_pixel, pixel)
+            total_SSE += delta_e_cie2000(lab_color1, lab_color2)
     return total_SSE
 
 
@@ -160,13 +180,17 @@ def get_timestamp_str():
 
 
 ## Function to return weight of a pixel based on squared distance from nearest centroid
+## NOW BASED ON delta e cie2000
 # @param centroids - list of RGB tuples (centroids chosen so far)
 # @param pixel - RGB tuple of pixel in question
 #
 def get_weight(centroids, pixel):
     min_distance = float("inf")
     for centroid in centroids:
-        distance = get_sq_euclidean_dist(centroid, pixel)
+        lab_color1 = LabColor(centroid[0], centroid[1], centroid[2])
+        lab_color2 = LabColor(pixel[0], pixel[1], pixel[2])
+        # distance = get_sq_euclidean_dist(centroid, pixel)
+        distance = delta_e_cie2000(lab_color1, lab_color2)
         if distance < min_distance:
             min_distance = distance
     return min_distance

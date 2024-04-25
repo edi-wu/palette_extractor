@@ -2,7 +2,8 @@
 ## Description: Module for functions related to palette image creation
 
 from PIL import Image
-
+from colormath.color_objects import sRGBColor, LabColor
+from colormath.color_conversions import convert_color
 
 ## Creates basic palette bands image
 # @param k_colors - resulting k_colors from k-means clustering (list of RGB tuples)
@@ -68,6 +69,12 @@ def create_appended_palette(src_image_array, mode, img_width, img_height, k_colo
         for y in range(img_height):
             result_img_array[x, y] = src_image_array[x, y]
 
+    # Convert k_colors from lab color space back to RGB
+    k_colors_rgb = []
+    for lab_color in k_colors:
+        lab_color_obj = LabColor(lab_color[0], lab_color[1], lab_color[2])
+        k_colors_rgb.append(convert_color(lab_color_obj, sRGBColor).get_upscaled_value_tuple())
+
     # Map k_clusters to a proportional length value in pixels
     k_colors_lengths = []
     for i in range(len(k_clusters)):
@@ -81,7 +88,7 @@ def create_appended_palette(src_image_array, mode, img_width, img_height, k_colo
     # Associate the lengths with each k_color, sorted in descending order
     map_length_to_color = {}
     for i in range(len(k_colors_lengths)):
-        map_length_to_color[k_colors_lengths[i]] = k_colors[i]
+        map_length_to_color[k_colors_lengths[i]] = k_colors_rgb[i]
     sorted_length_color_tuples = sorted(map_length_to_color.items(), reverse=True)
     # print(f"the sorted palette band lengths are: {sorted_length_color_tuples}")
 

@@ -9,6 +9,18 @@ from matplotlib import pyplot as plt
 from random import choices
 import k_means_utils
 import palette_utils
+from colormath.color_objects import sRGBColor, LabColor
+from colormath.color_conversions import convert_color
+import numpy
+
+
+# Patch for deprecated "asscalar" in numpy, likely being called by PIL ImageCms
+# See stackoverflow: https://stackoverflow.com/questions/76147221/trying-to-fix-a-numpy-asscalar-deprecation-issue
+def patch_asscalar(a):
+    return a.item()
+
+
+setattr(numpy, "asscalar", patch_asscalar)
 
 
 class K_Means:
@@ -21,9 +33,10 @@ class K_Means:
     # @param img_extension - string for the extension of the original image
     # @param palette_replace - bool for whether to create copies of original with colors replaced by palette colors
     # @param do_resize - int for % to resize down to; default is 100
-    # src_pixels: list of coords & RGB tuples ((x, y), (r, g, b)) for the source image
-    # k_colors: list of RGB tuples
-    # k_clusters: list of lists, each list contains a tuple of coords and RGB values ((x, y), (r, g, b))
+    # src_pixels_with_coords: list of coords & RGB tuples ((x, y), (r, g, b)) for the source image
+    # src_pixels: list of LabColor objects
+    # k_colors: list of LabColor objects
+    # k_clusters: list of lists, each list contains LabColor objects
     # SSE: dict mapping k value to list of longs, each list logs SSE of each run at that k value
     # total_time: total time elapsed in seconds for suite of runs
     # result_img_path: path to result image for server response
@@ -38,6 +51,7 @@ class K_Means:
         self.resize_level = resize_level
 
         self.src_pixels_with_coords = []
+        self.src_pixels = []
         self.k_colors = []
         self.k_clusters = [[]]
         self.SSE = {}
@@ -60,10 +74,14 @@ class K_Means:
             src_image_array = img.load()
             img_height, img_width = img.height, img.width
 
-            # Obtain list of pixels as RGB tuples
+            # Obtain list of pixels as CIELAB tuples
             for x in range(img_width):
                 for y in range(img_height):
                     self.src_pixels_with_coords.append(((x, y), (src_image_array[x, y])))
+                    rgb_tuple = src_image_array[x, y]
+                    rgb_color = sRGBColor(rgb_tuple[0] / 255.0, rgb_tuple[1] / 255.0, rgb_tuple[2] / 255.0)
+                    lab_tuple = convert_color(rgb_color, LabColor).get_value_tuple()
+                    self.src_pixels.append(lab_tuple)
 
             # Loop to run n times for specified values of k (single or ranged)
             k_start, k_end, k_interval = self.k_values
@@ -146,6 +164,7 @@ class K_Means:
         iteration_num = 0
         # Boolean for whether the result k_colors changed in last iteration
         result_changed = True
+        # result_changed = False  # for short-circuiting to test centroid initialization
 
         # Run algorithm until result no longer changes
         while result_changed:
@@ -153,7 +172,7 @@ class K_Means:
             last_k_colors = self.k_colors[:]
 
             # Place all pixels into clusters, each ith cluster corresponds to ith color in k_colors
-            k_means_utils.group_pixels(self.src_pixels_with_coords, self.k_colors, self.k_clusters)
+            k_means_utils.group_pixels(self.src_pixels, self.k_colors, self.k_clusters)
 
             # Update k_colors by getting new representative color from each cluster,
             ## where the representative color is the average color by RGB values
@@ -161,9 +180,10 @@ class K_Means:
 
             # Log updated k_colors with iteration number
             iteration_num += 1
-            logger.log("[ " + str(iteration_num) + "]: " + k_means_utils.stringify_tuple_list(self.k_colors))
+            logger.log("[ " + str(iteration_num) + "]: " + k_means_utils.stringify_tuple_list(self.k_colors) + '\n')
 
             # Compare updated result with past result and update change boolean as needed
+            # Use JND threshold of 1.0
             result_changed = not k_means_utils.compare_tuple_lists(self.k_colors, last_k_colors)
 
         # Print and log resulting k_colors
@@ -183,20 +203,22 @@ class K_Means:
     def run_k_means_plus_plus(self, k):
         print(f"Running k_means++ to select {k} centroids\n")
         # Initially select one pixel at random
-        ## NB choices returns list of 1 item by default, use [0] to access pixel, [1] to access its RGB tuple
-        self.k_colors.append(choices(self.src_pixels_with_coords)[0][1])
+        ## NB choices returns list of 1 item by default, use [0] to access the CIELAB tuple
+        self.k_colors.append(choices(self.src_pixels)[0])
+        print(f"first centroid: {self.k_colors}")
         # Create list of weights proportional to sq dist of each pixel to nearest selected center
         weights = []
-        for i in range(len(self.src_pixels_with_coords)):
-            curr_pixel = self.src_pixels_with_coords[i][1]
+        for i in range(len(self.src_pixels)):
+            curr_pixel = self.src_pixels[i]
             weights.append(k_means_utils.get_weight(self.k_colors, curr_pixel))
+        print("updated weights first time.")
         # While not k have been chosen:
         while len(self.k_colors) < k:
             # Choose next center
-            self.k_colors.append(choices(self.src_pixels_with_coords, weights=weights)[0][1])
+            self.k_colors.append(choices(self.src_pixels, weights=weights)[0])
             # Update weights
-            for i in range(len(self.src_pixels_with_coords)):
-                curr_pixel = self.src_pixels_with_coords[i][1]
+            for i in range(len(self.src_pixels)):
+                curr_pixel = self.src_pixels[i]
                 weights[i] = k_means_utils.get_weight(self.k_colors, curr_pixel)
 
     ## Function to create result images showing the palette
@@ -217,13 +239,13 @@ class K_Means:
         palette_img.close()
 
         # Create copy of original with pixels replaced by representative colors
-        if self.palette_replace:
-            reduced_image_path = (f"./results/{k_means_utils.get_timestamp_str()}__{self.project_name}_[r]_run_"
-                                  f"{run_num + 1}_k_{k}{self.img_extension}")
-            reduced_image = palette_utils.create_reduced_image(mode, img_width, img_height,
-                                                               self.k_clusters, self.k_colors)
-            reduced_image.save(reduced_image_path)
-            reduced_image.close()
+        # if self.palette_replace:
+        #     reduced_image_path = (f"./results/{k_means_utils.get_timestamp_str()}__{self.project_name}_[r]_run_"
+        #                           f"{run_num + 1}_k_{k}{self.img_extension}")
+        #     reduced_image = palette_utils.create_reduced_image(mode, img_width, img_height,
+        #                                                        self.k_clusters, self.k_colors)
+        #     reduced_image.save(reduced_image_path)
+        #     reduced_image.close()
 
         # Return palette image path for server
         return palette_img_path
