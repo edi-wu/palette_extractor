@@ -2,6 +2,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import os
 from K_Means import K_Means
 from k_means_utils import get_timestamp_str
+import json
+import time
 
 # Specify port for HTTP server
 PORT = 8000
@@ -25,43 +27,51 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     # path: /Users/ediwu/Desktop/img3.jpg
     def do_POST(self):
         print("Incoming POST request.")
-        # Get content type of incoming request
-        content_type = self.headers.get("Content-Type")
-        # Get length of data content
-        content_length = int(self.headers.get("Content-Length"))
-        # Read entire binary data
-        data = self.rfile.read(content_length)
-        # Write data into a jpeg file
-        FILE_NAME = "src_images/flowers.jpeg"
-        with open(FILE_NAME, "wb") as img:
-            img.write(data)
-        ### Call UI tools function to run image processing module
-        ### present_menu()
-        # Instantiate K-Means object and run process
-        # DEFAULTS
-        project_name = "DEFAULT_PROJECT"
-        k_values = (6, 6, 1)
-        num_runs = 1
-        img_extension = ".jpeg"
-        palette_replace = True
-        resize_level = 100
-        file_path = os.path.join(os.getcwd(), FILE_NAME)
-        log_file_name = f"{get_timestamp_str()}__{project_name}_{str(num_runs)}x_{k_values[0]}"
-        # END DEFAULTS
-        k_means_process = K_Means(project_name, k_values, file_path, num_runs, log_file_name, img_extension,
-                                  palette_replace, resize_level)
-        partial_result_path = k_means_process.run()
-
-        # Read from result image from path and return to user
-        result_image_path = os.path.join(os.getcwd(), partial_result_path)
-
-        # Send response
+        time.sleep(5)
         self.send_response(200)
-        self.send_header('Content-Type', 'image/jpeg')
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
-        # self.wfile.write('okay'.encode())
-        with open(result_image_path, 'rb') as result_image:
-            self.wfile.write(result_image.read())
+        json_str = json.dumps("hello there.")
+        self.wfile.write(json_str.encode())
+        # self.wfile.write("POST Request received".encode())
+        # # Get content type of incoming request
+        # content_type = self.headers.get("Content-Type")
+        # # Get length of data content
+        # content_length = int(self.headers.get("Content-Length"))
+        # # Read entire binary data
+        # data = self.rfile.read(content_length)
+        # # Write data into a jpeg file
+        # FILE_NAME = "src_images/flowers.jpeg"
+        # with open(FILE_NAME, "wb") as img:
+        #     img.write(data)
+        # ### Call UI tools function to run image processing module
+        # ### present_menu()
+        # # Instantiate K-Means object and run process
+        # # DEFAULTS
+        # project_name = "DEFAULT_PROJECT"
+        # k_values = (6, 6, 1)
+        # num_runs = 1
+        # img_extension = ".jpeg"
+        # palette_replace = True
+        # resize_level = 100
+        # file_path = os.path.join(os.getcwd(), FILE_NAME)
+        # log_file_name = f"{get_timestamp_str()}__{project_name}_{str(num_runs)}x_{k_values[0]}"
+        # # END DEFAULTS
+        # k_means_process = K_Means(project_name, k_values, file_path, num_runs, log_file_name, img_extension,
+        #                           palette_replace, resize_level)
+        # partial_result_path = k_means_process.run()
+        #
+        # # Read from result image from path and return to user
+        # result_image_path = os.path.join(os.getcwd(), partial_result_path)
+        #
+        # # Send response
+        # self.send_response(200)
+        # self.send_header('Content-Type', 'image/jpeg')
+        # self.end_headers()
+        # # self.wfile.write('okay'.encode())
+        # with open(result_image_path, 'rb') as result_image:
+        #     self.wfile.write(result_image.read())
 
 
 # Runs http server on specified port
