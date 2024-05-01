@@ -211,6 +211,7 @@ class K_Means:
         # Create the palette appended to original image
         palette_img_path = (f"./results/{k_means_utils.get_timestamp_str()}__{self.project_name}_run_{run_num + 1}_k_"
                             f"{k}{self.img_extension}")
+        # palette_img_path = f"./results/{self.project_name}{self.img_extension}"
         palette_img = palette_utils.create_appended_palette(src_image_array, mode, img_width, img_height,
                                                             self.k_colors, self.k_clusters)
         palette_img.save(palette_img_path)
