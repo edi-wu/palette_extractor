@@ -117,7 +117,8 @@ def get_average_pixel(cluster):
         sum_r += pixel[0]
         sum_g += pixel[1]
         sum_b += pixel[2]
-    return round(sum_r / num_pixels), round(sum_g / num_pixels), round(sum_b / num_pixels)
+    # return round(sum_r / num_pixels), round(sum_g / num_pixels), round(sum_b / num_pixels)
+    return (sum_r / num_pixels), (sum_g / num_pixels), (sum_b / num_pixels)
 
 
 ## Compares two lists of tuples for equality (same content in same order)

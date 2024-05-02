@@ -2,7 +2,7 @@
 ## Description: Class for k-means process
 
 
-from PIL import Image
+from PIL import Image, ImageCms
 from Logger import Logger
 from time import perf_counter
 from matplotlib import pyplot as plt
@@ -56,8 +56,16 @@ class K_Means:
                 resize_fraction = self.resize_level / 100
                 img = img.resize((round(img.width * resize_fraction), round(img.height * resize_fraction)))
 
+            # Convert to lab space
+            srgb_p = ImageCms.createProfile("sRGB")
+            lab_p = ImageCms.createProfile("LAB")
+            rgb2lab = ImageCms.buildTransformFromOpenProfiles(srgb_p, lab_p, "RGB", "LAB")
+            lab_img = ImageCms.applyTransform(img, rgb2lab)
+
             # Load image array
-            src_image_array = img.load()
+            # src_image_array = img.load()
+            print(f"image mode: {lab_img.mode}")
+            src_image_array = lab_img.load()
             img_height, img_width = img.height, img.width
 
             # Obtain list of pixels as RGB tuples
