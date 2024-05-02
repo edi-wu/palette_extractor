@@ -1,7 +1,7 @@
 ## Name: Eddie Wu
 ## Description: Module for functions related to palette image creation
 
-from PIL import Image
+from PIL import Image, ImageCms
 
 
 ## Creates basic palette bands image
@@ -59,8 +59,8 @@ def create_appended_palette(src_image_array, mode, img_width, img_height, k_colo
         canvas_height = canvas_height + GAP + max(MIN_PALETTE_DIMENSION, round(shorter_dimension / 2))
         orientation = 'L'
 
-    # Create copy of original image, initially all white
-    result_img = Image.new(mode, (canvas_width, canvas_height), color=(255, 255, 255))
+    # Create copy of original image, initially all white (255, 128, 128) in PIL LAB transform
+    result_img = Image.new(mode, (canvas_width, canvas_height), color=(255, 128, 128))
     result_img_array = result_img.load()
 
     # Write original image to canvas
@@ -108,6 +108,12 @@ def create_appended_palette(src_image_array, mode, img_width, img_height, k_colo
             # Update start point of y coordinate
             x_start += sorted_length_color_tuples[i][0]
 
+    srgb_p = ImageCms.createProfile("sRGB")
+    lab_p = ImageCms.createProfile("LAB")
+    lab2rgb = ImageCms.buildTransformFromOpenProfiles(lab_p, srgb_p, "LAB", "RGB")
+    result_img = ImageCms.applyTransform(result_img, lab2rgb)
+    print(f"verify result image mode: {result_img.mode}")
+
     return result_img
 
 
@@ -121,7 +127,7 @@ def create_appended_palette(src_image_array, mode, img_width, img_height, k_colo
 # @return PIL image object of a copy of original image, with all pixels replaced by their representative
 #
 def create_reduced_image(mode, img_width, img_height, k_clusters, k_colors):
-    result_img = Image.new(mode, (img_width, img_height), color=(255, 255, 255))
+    result_img = Image.new(mode, (img_width, img_height), color=(255, 128, 128))
     result_img_array = result_img.load()
 
     for i in range(len(k_colors)):
@@ -130,5 +136,11 @@ def create_reduced_image(mode, img_width, img_height, k_clusters, k_colors):
         for pixel in pixel_cluster:
             x, y = pixel[0]
             result_img_array[x, y] = replacement_color
+
+    srgb_p = ImageCms.createProfile("sRGB")
+    lab_p = ImageCms.createProfile("LAB")
+    lab2rgb = ImageCms.buildTransformFromOpenProfiles(lab_p, srgb_p, "LAB", "RGB")
+    result_img = ImageCms.applyTransform(result_img, lab2rgb)
+    print(f"verify result image mode: {result_img.mode}")
 
     return result_img

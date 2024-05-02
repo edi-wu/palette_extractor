@@ -66,7 +66,7 @@ class K_Means:
             # src_image_array = img.load()
             print(f"image mode: {lab_img.mode}")
             src_image_array = lab_img.load()
-            img_height, img_width = img.height, img.width
+            img_height, img_width = lab_img.height, lab_img.width
 
             # Obtain list of pixels as RGB tuples
             for x in range(img_width):

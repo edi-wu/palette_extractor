@@ -32,7 +32,7 @@ def upload_image():
         k_values = (k, k, 1)
         num_runs = 1
         img_extension = ".jpeg"  # to change later?
-        palette_replace = False
+        palette_replace = True
         resize_level = 100
         log_file_name = f"{get_timestamp_str()}__{project_name}_{str(num_runs)}x_{k_values[0]}"
         # END DEFAULTS

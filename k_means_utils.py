@@ -3,6 +3,7 @@
 
 import random
 from time import localtime, strftime
+from math import sqrt
 
 
 ## Returns k sets of distinct coordinates given specified bounds
@@ -117,8 +118,8 @@ def get_average_pixel(cluster):
         sum_r += pixel[0]
         sum_g += pixel[1]
         sum_b += pixel[2]
-    # return round(sum_r / num_pixels), round(sum_g / num_pixels), round(sum_b / num_pixels)
-    return (sum_r / num_pixels), (sum_g / num_pixels), (sum_b / num_pixels)
+    return round(sum_r / num_pixels), round(sum_g / num_pixels), round(sum_b / num_pixels)
+    # return (sum_r / num_pixels), (sum_g / num_pixels), (sum_b / num_pixels)
 
 
 ## Compares two lists of tuples for equality (same content in same order)
@@ -132,7 +133,11 @@ def compare_tuple_lists(list_1, list_2):
         return False
     # Check equality of each tuple in order
     for i in range(len(list_1)):
-        if list_1[i] != list_2[i]:
+        dist = sqrt(get_sq_euclidean_dist(list_1[i], list_2[i]))
+        # if list_1[i] != list_2[i]:
+        #     return False
+        # if dist > 2.3:
+        if dist > 1.0:
             return False
     return True
 
