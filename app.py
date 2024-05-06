@@ -7,11 +7,12 @@ from k_means_utils import get_timestamp_str
 app = Flask(__name__)
 CORS(app)
 
-APP_PATH = "http://127.0.0.1:5000"
+APP_PATH = "http://127.0.0.1:8000"
 result_path = ""
 
 
 @app.route('/upload', methods=['POST'])
+@cross_origin()
 def upload_image():
     global result_path
     # Check for missing file
@@ -44,10 +45,11 @@ def upload_image():
 
 
 @app.route('/result', methods=['GET'])
+@cross_origin()
 def get_result():
     actual_path = result_path.rsplit("/", 1)[1]
     return send_from_directory("./results", actual_path)
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(port=8000)

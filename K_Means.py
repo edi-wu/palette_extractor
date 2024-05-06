@@ -2,7 +2,7 @@
 ## Description: Class for k-means process
 
 
-from PIL import Image, ImageCms
+from PIL import Image, ImageCms, ImageOps
 from Logger import Logger
 from time import perf_counter
 from matplotlib import pyplot as plt
@@ -49,7 +49,7 @@ class K_Means:
         print('\nPlease wait... running k-means clustering.')
 
         with Image.open(self.file_path) as img, Logger(self.log_file_name) as logger:
-
+            img = ImageOps.exif_transpose(img)
             logger.log('Project Name: ' + self.project_name + '\n\n')
 
             if self.resize_level < 100:
@@ -64,10 +64,8 @@ class K_Means:
 
             # Load image array
             # src_image_array = img.load()
-            print(f"image mode: {lab_img.mode}")
             src_image_array = lab_img.load()
             img_height, img_width = lab_img.height, lab_img.width
-
             # Obtain list of pixels as RGB tuples
             for x in range(img_width):
                 for y in range(img_height):

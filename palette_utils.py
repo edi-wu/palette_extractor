@@ -112,7 +112,6 @@ def create_appended_palette(src_image_array, mode, img_width, img_height, k_colo
     lab_p = ImageCms.createProfile("LAB")
     lab2rgb = ImageCms.buildTransformFromOpenProfiles(lab_p, srgb_p, "LAB", "RGB")
     result_img = ImageCms.applyTransform(result_img, lab2rgb)
-    print(f"verify result image mode: {result_img.mode}")
 
     return result_img
 
@@ -141,6 +140,5 @@ def create_reduced_image(mode, img_width, img_height, k_clusters, k_colors):
     lab_p = ImageCms.createProfile("LAB")
     lab2rgb = ImageCms.buildTransformFromOpenProfiles(lab_p, srgb_p, "LAB", "RGB")
     result_img = ImageCms.applyTransform(result_img, lab2rgb)
-    print(f"verify result image mode: {result_img.mode}")
 
     return result_img
