@@ -72,6 +72,7 @@ class K_Means:
                     self.src_pixels_with_coords.append(((x, y), (src_image_array[x, y])))
 
             print(f"Number of pixels in image: {img_height * img_width}\n")
+            logger.log(f"Number of pixels in image: {img_height * img_width}\n")
 
             # Loop to run n times for specified values of k (single or ranged)
             k_start, k_end, k_interval = self.k_values
@@ -186,6 +187,13 @@ class K_Means:
         print("Representative k_colors: ", self.k_colors)
         logger.log("\nRepresentative k_colors: ")
         logger.log(k_means_utils.stringify_tuple_list(self.k_colors) + '\n')
+
+        # Sanity check for total pixels processed
+        total_pixels = 0
+        for cluster in self.k_clusters:
+            total_pixels += len(cluster)
+        print(f"Sum of cluster sizes: {total_pixels}")
+        logger.log(f"Sum of cluster sizes: {total_pixels}\n")
 
         # Use perf counter for end time and log time elapsed
         stop_time = perf_counter()
