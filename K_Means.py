@@ -71,6 +71,8 @@ class K_Means:
                 for y in range(img_height):
                     self.src_pixels_with_coords.append(((x, y), (src_image_array[x, y])))
 
+            print(f"Number of pixels in image: {img_height * img_width}\n")
+
             # Loop to run n times for specified values of k (single or ranged)
             k_start, k_end, k_interval = self.k_values
             # Initialize elements in SSE dict to empty lists
@@ -103,6 +105,11 @@ class K_Means:
             # Plot total SSE against k if used a range of k values
             if k_start != k_end:
                 self.plot_SSE()
+
+            total_pixels = 0
+            for cluster in self.k_clusters:
+                total_pixels += len(cluster)
+            print(f"Number of pixels processed: {total_pixels}\n")
 
             # Log total time elapsed for this suite of runs
             logger.log(f"Summary: \nNumber of runs: {self.num_runs}\n"
@@ -157,6 +164,9 @@ class K_Means:
         while result_changed:
             # Make copy of last iteration's palette
             last_k_colors = self.k_colors[:]
+
+            # Wipe k_clusters first
+            self.k_clusters = [[] for _ in range(k)]
 
             # Place all pixels into clusters, each ith cluster corresponds to ith color in k_colors
             k_means_utils.group_pixels(self.src_pixels_with_coords, self.k_colors, self.k_clusters)
