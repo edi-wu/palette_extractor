@@ -51,6 +51,7 @@ class K_Means:
 
     ## Main function to run k-means
     def run(self):
+        run_start_time = perf_counter()
         print('\nPlease wait... running k-means clustering.')
 
         with Image.open(self.file_path) as img, Logger(self.log_file_name) as logger:
@@ -66,7 +67,7 @@ class K_Means:
             img_height, img_width = img.height, img.width
 
             print(f"Number of pixels in the image: {img_width * img_height}")
-            logger.log(f"\nNumber of pixels in the image: {img_width * img_height}\n")
+            logger.log(f"Number of pixels in the image: {img_width * img_height}\n")
 
             # Generate frequency map
             pixel_freq_map = {}
@@ -84,7 +85,7 @@ class K_Means:
             #     print(self.src_pixels_with_freq[i])
 
             print(f"Number of colors to process: {len(self.src_pixels_with_freq)}")
-            logger.log(f"\nNumber of colors to process: {len(self.src_pixels_with_freq)}\n")
+            logger.log(f"Number of colors to process: {len(self.src_pixels_with_freq)}\n")
 
             # Convert pixel portion of each tuple to LAB color space
             for i in range(len(self.src_pixels_with_freq)):
@@ -129,10 +130,14 @@ class K_Means:
             if k_start != k_end:
                 self.plot_SSE()
 
+            # Get total time elapsed including file loading and conversion
+            run_stop_time = perf_counter()
+            self.total_time = run_stop_time - run_start_time
+
             # Log total time elapsed for this suite of runs
             logger.log(f"Summary: \nNumber of runs: {self.num_runs}\n"
                        f"k_start: {k_start}; k_end: {k_end}; k_interval: {k_interval}\n"
-                       f"Total time elapsed: {self.total_time} seconds.")
+                       f"Total time elapsed (including file processing): {self.total_time} seconds.")
 
         return self.result_img_path
 
@@ -204,7 +209,7 @@ class K_Means:
         # Use perf counter for end time and log time elapsed
         stop_time = perf_counter()
         time_elapsed = stop_time - start_time
-        self.total_time += time_elapsed
+        # self.total_time += time_elapsed
         logger.log("Time elapsed for k-means algorithm: " + str(time_elapsed) + " seconds\n")
 
     ## Function to update self.k_colors with k initial centroids using k-means++
