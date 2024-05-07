@@ -39,18 +39,18 @@ def create_basic_palette(k_colors):
 # @param img_width - width of original image
 # @param img_height - height of original image
 # @param k_colors - resulting k_colors from k-means clustering (list of RGB tuples)
-# @param k_clusters - resulting k_clusters for each representative color (used for proportional palette bands)
+# @param k_clusters_sizes - size of each k_cluster
 # @return PIL image object of a png with vertical bands, one for each k_color
 #
-def create_appended_palette(src_image_array, mode, img_width, img_height, k_colors, k_clusters):
+def create_appended_palette(src_image_array, mode, img_width, img_height, k_colors, k_clusters_sizes):
     # Create underlying "canvas" with enough room for the palette section
-    # Make a white gap of 25 px between image and palette
+    # Make a white gap between image and palette, size is 5% longer dimension
     # Make palette dimension 1/2 of image dimension, minimum 50 px
-    GAP = 25
     MIN_PALETTE_DIMENSION = 50
     canvas_width, canvas_height = img_width, img_height
     shorter_dimension = min(img_width, img_height)
     longer_dimension = max(img_height, img_width)
+    GAP = round(5 * longer_dimension / 100)
     orientation = ''
     if canvas_width == shorter_dimension:
         canvas_width = canvas_width + GAP + max(MIN_PALETTE_DIMENSION, round(shorter_dimension / 2))
@@ -59,8 +59,8 @@ def create_appended_palette(src_image_array, mode, img_width, img_height, k_colo
         canvas_height = canvas_height + GAP + max(MIN_PALETTE_DIMENSION, round(shorter_dimension / 2))
         orientation = 'L'
 
-    # Create copy of original image, initially all white (255, 128, 128) in PIL LAB transform
-    result_img = Image.new(mode, (canvas_width, canvas_height), color=(255, 128, 128))
+    # Create copy of original image, initially all white
+    result_img = Image.new(mode, (canvas_width, canvas_height), color=(255, 255, 255))
     result_img_array = result_img.load()
 
     # Write original image to canvas
@@ -69,9 +69,8 @@ def create_appended_palette(src_image_array, mode, img_width, img_height, k_colo
             result_img_array[x, y] = src_image_array[x, y]
 
     # Map k_clusters to a proportional length value in pixels
-    k_colors_lengths = []
-    for i in range(len(k_clusters)):
-        k_colors_lengths.append(len(k_clusters[i]))
+    ## Now easier since we have k_clusters_sizes!
+    k_colors_lengths = k_clusters_sizes
     total_pixels = sum(k_colors_lengths)
     for i in range(len(k_colors_lengths)):
         k_colors_lengths[i] = round((k_colors_lengths[i] / total_pixels) * longer_dimension)
@@ -83,6 +82,7 @@ def create_appended_palette(src_image_array, mode, img_width, img_height, k_colo
     for i in range(len(k_colors_lengths)):
         map_length_to_color[k_colors_lengths[i]] = k_colors[i]
     sorted_length_color_tuples = sorted(map_length_to_color.items(), reverse=True)
+
     # print(f"the sorted palette band lengths are: {sorted_length_color_tuples}")
 
     # Write the palette section onto canvas based on orientation
@@ -108,10 +108,10 @@ def create_appended_palette(src_image_array, mode, img_width, img_height, k_colo
             # Update start point of y coordinate
             x_start += sorted_length_color_tuples[i][0]
 
-    srgb_p = ImageCms.createProfile("sRGB")
-    lab_p = ImageCms.createProfile("LAB")
-    lab2rgb = ImageCms.buildTransformFromOpenProfiles(lab_p, srgb_p, "LAB", "RGB")
-    result_img = ImageCms.applyTransform(result_img, lab2rgb)
+    # srgb_p = ImageCms.createProfile("sRGB")
+    # lab_p = ImageCms.createProfile("LAB")
+    # lab2rgb = ImageCms.buildTransformFromOpenProfiles(lab_p, srgb_p, "LAB", "RGB")
+    # result_img = ImageCms.applyTransform(result_img, lab2rgb)
 
     return result_img
 

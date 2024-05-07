@@ -2,7 +2,7 @@
 ## Description: Class for k-means process
 
 
-from PIL import Image, ImageCms, ImageOps
+from PIL import Image, ImageOps
 from Logger import Logger
 from time import perf_counter
 from matplotlib import pyplot as plt
@@ -21,13 +21,16 @@ class K_Means:
     # @param img_extension - string for the extension of the original image
     # @param palette_replace - bool for whether to create copies of original with colors replaced by palette colors
     # @param do_resize - int for % to resize down to; default is 100
-    # src_pixels: list of coords & RGB tuples ((x, y), (r, g, b)) for the source image
-    # k_colors: list of RGB tuples
-    # k_clusters: list of lists, each list contains a tuple of coords and RGB values ((x, y), (r, g, b))
+    # src_pixels_with_coords: list of coords & LAB tuples ((x, y), (r, g, b)) for the source image
+    # src_pixels_with_freq: list of lists, each smaller list contains LAB tuples and their freq. i.e. [(L, a, b), n]
+    # k_colors: list of LAB tuples
+    # k_clusters: list of lists, each list contains LAB tuple and its freq: [(L, a, b), n]
+    # k_clusters_sizes: list of ints corresponding to size of each cluster (sum of each color * its frequency)
     # SSE: dict mapping k value to list of longs, each list logs SSE of each run at that k value
     # total_time: total time elapsed in seconds for suite of runs
     # result_img_path: path to result image for server response
-    def __init__(self, project_name, k_values, file_path, num_runs, log_file_name, img_extension, palette_replace, resize_level):
+    def __init__(self, project_name, k_values, file_path, num_runs, log_file_name, img_extension, palette_replace,
+                 resize_level):
         self.project_name = project_name
         self.file_path = file_path
         self.k_values = k_values
@@ -37,9 +40,11 @@ class K_Means:
         self.palette_replace = palette_replace
         self.resize_level = resize_level
 
-        self.src_pixels_with_coords = []
+        self.src_pixels_with_coords = []  # Now not used
+        self.src_pixels_with_freq = []
         self.k_colors = []
         self.k_clusters = [[]]
+        self.k_clusters_sizes = []
         self.SSE = {}
         self.total_time = 0
         self.result_img_path = ''
@@ -56,20 +61,39 @@ class K_Means:
                 resize_fraction = self.resize_level / 100
                 img = img.resize((round(img.width * resize_fraction), round(img.height * resize_fraction)))
 
-            # Convert to lab space
-            srgb_p = ImageCms.createProfile("sRGB")
-            lab_p = ImageCms.createProfile("LAB")
-            rgb2lab = ImageCms.buildTransformFromOpenProfiles(srgb_p, lab_p, "RGB", "LAB")
-            lab_img = ImageCms.applyTransform(img, rgb2lab)
+            # Load image array and get dimensions
+            src_image_array = img.load()
+            img_height, img_width = img.height, img.width
 
-            # Load image array
-            # src_image_array = img.load()
-            src_image_array = lab_img.load()
-            img_height, img_width = lab_img.height, lab_img.width
-            # Obtain list of pixels as RGB tuples
+            print(f"Number of pixels in the image: {img_width * img_height}")
+            logger.log(f"\nNumber of pixels in the image: {img_width * img_height}\n")
+
+            # Generate frequency map
+            pixel_freq_map = {}
             for x in range(img_width):
                 for y in range(img_height):
-                    self.src_pixels_with_coords.append(((x, y), (src_image_array[x, y])))
+                    rgb_tuple = src_image_array[x, y]
+                    pixel_freq_map[rgb_tuple] = pixel_freq_map.get(rgb_tuple, 0) + 1
+
+            # Create list of RGB tuples with frequency
+            for k, v in pixel_freq_map.items():
+                self.src_pixels_with_freq.append([k, v])
+
+            # Check print first 10
+            # for i in range(10):
+            #     print(self.src_pixels_with_freq[i])
+
+            print(f"Number of colors to process: {len(self.src_pixels_with_freq)}")
+            logger.log(f"\nNumber of colors to process: {len(self.src_pixels_with_freq)}\n")
+
+            # Convert pixel portion of each tuple to LAB color space
+            for i in range(len(self.src_pixels_with_freq)):
+                # Convert the RGB tuple to a LAB tuple
+                self.src_pixels_with_freq[i][0] = k_means_utils.rgb_to_lab(self.src_pixels_with_freq[i][0])
+
+            # Check print first 10
+            # for i in range(10):
+            #     print(self.src_pixels_with_freq[i])
 
             # Loop to run n times for specified values of k (single or ranged)
             k_start, k_end, k_interval = self.k_values
@@ -86,7 +110,8 @@ class K_Means:
                         # Run k-means algorithm
                         self.run_k_means(src_image_array, img_height, img_width, k, logger)
                         # Create result visualization
-                        self.result_img_path = self.visualize_results(src_image_array, img.mode, img_width, img_height, run_num, k)
+                        self.result_img_path = self.visualize_results(src_image_array, img.mode, img_width, img_height,
+                                                                      run_num, k)
                         # Calculate and log total SSE for the given k
                         sse_value = k_means_utils.get_total_SSE(self.k_colors, self.k_clusters)
                         self.SSE[k].append(sse_value)
@@ -122,28 +147,13 @@ class K_Means:
         start_time = perf_counter()
         print('\nRunning k-means with k = ' + str(k))
 
-        # Test exception handling and logging
-        # if k % 2 == 0:
-        #     raise ValueError("Testing quitting and logging exception, k = " + str(k))
-
-        # Method 1: Get the initial k colors (list of pixel tuples) by randomly selecting coordinates
-        ## Coordinates' max value is 1 less than dimension
-        ## Consider putting this in a function to use with switch statement
-        # k_random_coords = k_means_utils.get_k_random_coords(k, w - 1, h - 1)
-        # self.k_colors = k_means_utils.map_coords_to_pixels(k_random_coords, src_image_array)
-
-        # Print and log initial k_colors
-        # print("Initial k_colors (randomly selected): ", self.k_colors)
-        # logger.log("Initial k_colors (randomly selected): ")
-        # logger.log(k_means_utils.stringify_tuple_list(self.k_colors) + '\n')
-
-        # Method 2: Get initial k colors via k-means++ selection
+        # Get initial k colors via k-means++ selection
         kmpp_start_time = perf_counter()
         self.run_k_means_plus_plus(k)
         kmpp_stop_time = perf_counter()
         logger.log(f"Time elapsed for k-means++: {kmpp_stop_time - kmpp_start_time} seconds")
 
-        # Print and log initial k_colors
+        # Print and log initial k_colors (now in LAB space!)
         print("Initial k_colors (k-means++): ", self.k_colors)
         logger.log("Initial k_colors (k-means++): ")
         logger.log(k_means_utils.stringify_tuple_list(self.k_colors) + '\n')
@@ -159,11 +169,21 @@ class K_Means:
             last_k_colors = self.k_colors[:]
 
             # Place all pixels into clusters, each ith cluster corresponds to ith color in k_colors
-            k_means_utils.group_pixels(self.src_pixels_with_coords, self.k_colors, self.k_clusters)
+            # k_means_utils.group_pixels(self.src_pixels_with_coords, self.k_colors, self.k_clusters)
+            k_means_utils.group_pixels(self.src_pixels_with_freq, self.k_colors, self.k_clusters)
 
             # Update k_colors by getting new representative color from each cluster,
             ## where the representative color is the average color by RGB values
             self.k_colors = k_means_utils.update_k_colors(self.k_clusters)
+
+            # Update size of each cluster by counting sum of occurrences for each pixel
+            self.k_clusters_sizes = []  # Wipe old sizes first
+            for i in range(len(self.k_clusters)):
+                size = 0
+                curr_cluster = self.k_clusters[i]
+                for j in range(len(curr_cluster)):
+                    size += curr_cluster[j][1]
+                self.k_clusters_sizes.append(size)
 
             # Log updated k_colors with iteration number
             iteration_num += 1
@@ -171,6 +191,10 @@ class K_Means:
 
             # Compare updated result with past result and update change boolean as needed
             result_changed = not k_means_utils.compare_tuple_lists(self.k_colors, last_k_colors)
+
+        # Convert final k_colors back to RGB
+        for i in range(len(self.k_colors)):
+            self.k_colors[i] = k_means_utils.lab_to_rgb(self.k_colors[i])
 
         # Print and log resulting k_colors
         print("Representative k_colors: ", self.k_colors)
@@ -189,21 +213,26 @@ class K_Means:
     def run_k_means_plus_plus(self, k):
         print(f"Running k_means++ to select {k} centroids\n")
         # Initially select one pixel at random
-        ## NB choices returns list of 1 item by default, use [0] to access pixel, [1] to access its RGB tuple
-        self.k_colors.append(choices(self.src_pixels_with_coords)[0][1])
+        # NB choices returns list of 1 item by default, use [0] to access pixel, [0] again to access its LAB tuple
+        self.k_colors.append(choices(self.src_pixels_with_freq)[0][0])
         # Create list of weights proportional to sq dist of each pixel to nearest selected center
         weights = []
-        for i in range(len(self.src_pixels_with_coords)):
-            curr_pixel = self.src_pixels_with_coords[i][1]
-            weights.append(k_means_utils.get_weight(self.k_colors, curr_pixel))
+        for i in range(len(self.src_pixels_with_freq)):
+            curr_pixel = self.src_pixels_with_freq[i][0]
+            curr_freq = self.src_pixels_with_freq[i][1]
+            # Multiply weight of 1 color by its number of occurrences
+            weights.append(k_means_utils.get_weight(self.k_colors, curr_pixel) * curr_freq)
+
         # While not k have been chosen:
         while len(self.k_colors) < k:
             # Choose next center
-            self.k_colors.append(choices(self.src_pixels_with_coords, weights=weights)[0][1])
-            # Update weights
-            for i in range(len(self.src_pixels_with_coords)):
-                curr_pixel = self.src_pixels_with_coords[i][1]
-                weights[i] = k_means_utils.get_weight(self.k_colors, curr_pixel)
+            self.k_colors.append(choices(self.src_pixels_with_freq, weights=weights)[0][0])
+            # Update weights again
+            for i in range(len(self.src_pixels_with_freq)):
+                curr_pixel = self.src_pixels_with_freq[i][0]
+                curr_freq = self.src_pixels_with_freq[i][1]
+                # Update weight
+                weights[i] = k_means_utils.get_weight(self.k_colors, curr_pixel) * curr_freq
 
     ## Function to create result images showing the palette
     # @param src_image_array - image array of source image
@@ -219,18 +248,18 @@ class K_Means:
                             f"{k}{self.img_extension}")
         # palette_img_path = f"./results/{self.project_name}{self.img_extension}"
         palette_img = palette_utils.create_appended_palette(src_image_array, mode, img_width, img_height,
-                                                            self.k_colors, self.k_clusters)
+                                                            self.k_colors, self.k_clusters_sizes)
         palette_img.save(palette_img_path)
         palette_img.close()
 
         # Create copy of original with pixels replaced by representative colors
-        if self.palette_replace:
-            reduced_image_path = (f"./results/{k_means_utils.get_timestamp_str()}__{self.project_name}_[r]_run_"
-                                  f"{run_num + 1}_k_{k}{self.img_extension}")
-            reduced_image = palette_utils.create_reduced_image(mode, img_width, img_height,
-                                                               self.k_clusters, self.k_colors)
-            reduced_image.save(reduced_image_path)
-            reduced_image.close()
+        # if self.palette_replace:
+        #     reduced_image_path = (f"./results/{k_means_utils.get_timestamp_str()}__{self.project_name}_[r]_run_"
+        #                           f"{run_num + 1}_k_{k}{self.img_extension}")
+        #     reduced_image = palette_utils.create_reduced_image(mode, img_width, img_height,
+        #                                                        self.k_clusters, self.k_colors)
+        #     reduced_image.save(reduced_image_path)
+        #     reduced_image.close()
 
         # Return palette image path for server
         return palette_img_path

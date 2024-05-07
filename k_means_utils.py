@@ -4,6 +4,7 @@
 import random
 from time import localtime, strftime
 from math import sqrt
+from skimage import color
 
 
 ## Returns k sets of distinct coordinates given specified bounds
@@ -42,19 +43,19 @@ def stringify_tuple_list(pixels_list):
 
 
 ## Places pixels from source array into appropriate cluster based on k_colors
-# @param pixels_with_coords - list of pixels with coords ((x, y), (r, g, b))
+# @param pixels_with_freqs - list of pixels with freqs [(L, a, b), n]
 # @param k_colors - current representative pixels (list of RGB tuples, length k)
 # @param k_clusters - current clusters of pixels (list of lists, each inner list is list of RGB tuples)
 #
-def group_pixels(pixels_with_coords, k_colors, k_clusters):
+def group_pixels(pixels_with_freqs, k_colors, k_clusters):
     # Iterate over pixels
-    for i in range(len(pixels_with_coords)):
-        curr_pixel_with_coords = pixels_with_coords[i]
-        curr_pixel = curr_pixel_with_coords[1]
+    for i in range(len(pixels_with_freqs)):
+        curr_pixel_with_freqs = pixels_with_freqs[i]
+        curr_pixel = curr_pixel_with_freqs[0]
         # Get the cluster index for current pixel based on min. squared Euclidean distance
         cluster_idx = get_cluster_id(curr_pixel, k_colors)
-        # Place the pixel in the corresponding cluster
-        k_clusters[cluster_idx].append(curr_pixel_with_coords)
+        # Place the pixel (with its frequency) in the corresponding cluster
+        k_clusters[cluster_idx].append(curr_pixel_with_freqs)
 
 
 ## Determine the closest representative color to a given pixel
@@ -107,19 +108,29 @@ def update_k_colors(k_clusters):
 #
 def get_average_pixel(cluster):
 
-    num_pixels = len(cluster)
+    num_pixels = 0
+    # Add all freqs of each pixel in cluster to get total number
+    for pixel in cluster:
+        num_pixels += pixel[1]
     if num_pixels == 0:
         raise ZeroDivisionError("Cluster contains 0 pixels")
-    pixels_list = []
-    for i in range(num_pixels):
-        pixels_list.append(cluster[i][1])
-    sum_r, sum_g, sum_b = 0, 0, 0
-    for pixel in pixels_list:
-        sum_r += pixel[0]
-        sum_g += pixel[1]
-        sum_b += pixel[2]
-    return round(sum_r / num_pixels), round(sum_g / num_pixels), round(sum_b / num_pixels)
-    # return (sum_r / num_pixels), (sum_g / num_pixels), (sum_b / num_pixels)
+    sum_L, sum_a, sum_b = 0, 0, 0
+    for pixel_with_freq in cluster:
+        sum_L += pixel_with_freq[0][0] * pixel_with_freq[1]
+        sum_a += pixel_with_freq[0][1] * pixel_with_freq[1]
+        sum_b += pixel_with_freq[0][2] * pixel_with_freq[1]
+    return sum_L / num_pixels, sum_a / num_pixels, sum_b / num_pixels
+
+    # pixels_list = []
+    # for i in range(num_pixels):
+    #     pixels_list.append(cluster[i][1])
+    # sum_r, sum_g, sum_b = 0, 0, 0
+    # for pixel in pixels_list:
+    #     sum_r += pixel[0]
+    #     sum_g += pixel[1]
+    #     sum_b += pixel[2]
+    # return round(sum_r / num_pixels), round(sum_g / num_pixels), round(sum_b / num_pixels)
+    # # return (sum_r / num_pixels), (sum_g / num_pixels), (sum_b / num_pixels)
 
 
 ## Compares two lists of tuples for equality (same content in same order)
@@ -152,9 +163,9 @@ def get_total_SSE(k_colors, k_clusters):
     for i in range(len(k_colors)):
         centroid_pixel = k_colors[i]
         pixel_cluster = k_clusters[i]
-        # Each pixel has format ((x, y), (r, g, b)) so need to use the RGB part
+        # Each pixel has format [(L, a, b), n]
         for pixel in pixel_cluster:
-            total_SSE += get_sq_euclidean_dist(centroid_pixel, pixel[1])
+            total_SSE += get_sq_euclidean_dist(centroid_pixel, pixel[0]) * pixel[1]
     return total_SSE
 
 
@@ -176,3 +187,23 @@ def get_weight(centroids, pixel):
         if distance < min_distance:
             min_distance = distance
     return min_distance
+
+
+## Function to convert a tuple in RGB to a tuple in LAB
+# @param rgb - tuple of RGB values (range 0 to 255)
+# @return tuple of LAB values
+#
+def rgb_to_lab(rgb):
+    rgb_color = [[[rgb[0] / 255, rgb[1] / 255, rgb[2] / 255]]]
+    lab_color = color.rgb2lab(rgb_color)
+    return lab_color[0][0][0], lab_color[0][0][1], lab_color[0][0][2]
+
+
+## Function to convert a tuple in LAB to a tuple in RGB, rounded to nearest int
+# @param lab - tuple of LAB values
+# @return tuple of RGB values, each rounded to nearest int
+#
+def lab_to_rgb(lab):
+    lab_color = [[[lab[0], lab[1], lab[2]]]]
+    rgb_color = color.lab2rgb(lab_color)
+    return round(rgb_color[0][0][0] * 255), round(rgb_color[0][0][1] * 255), round(rgb_color[0][0][2] * 255)
